@@ -332,6 +332,9 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
     };
   }, [handleKeyDown, handleTouchStart]);
   
+  // Utility: Detect mobile device
+  const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+  
   useEffect(() => {
     if (!bgImageLoaded || !birdImageLoaded) {
       console.log('Game loop waiting for:', {
@@ -349,11 +352,19 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
     // Define groundHeight here so it's available throughout the effect
     const groundHeight = 20;
     
-    // Make canvas fill the container
+    // Make canvas fill the container, but smaller on mobile
     const updateCanvasSize = () => {
       if (canvas) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        if (isMobile) {
+          // Use a smaller, fixed aspect ratio for mobile
+          const width = Math.min(window.innerWidth, 420);
+          const height = Math.min(window.innerHeight, 700);
+          canvas.width = width;
+          canvas.height = height;
+        } else {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        }
       }
     };
     
@@ -366,9 +377,9 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       
       // Draw background: blurred/dimmed stretched fill, then aspect-ratio-correct cover
       if (bgImageRef.current) {
-        // 1. Blurred/dimmed stretched fill
         ctx.save();
-        ctx.filter = 'blur(8px) brightness(0.7)';
+        // Reduce blur on mobile for performance
+        ctx.filter = isMobile ? 'brightness(0.7)' : 'blur(8px) brightness(0.7)';
         ctx.drawImage(bgImageRef.current, 0, 0, canvas.width, canvas.height);
         ctx.restore();
 
@@ -414,8 +425,8 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
           // Random width between 70 and 90
           const width = Math.floor(Math.random() * 20) + 70;
           
-          // Use cached gradient
-          const gradient = createPipeGradient(ctx, width);
+          // Use cached gradient, but skip on mobile for perf
+          const gradient = isMobile ? undefined : createPipeGradient(ctx, width);
           
           pipesRef.current.push({
             x: canvas.width,
@@ -429,23 +440,24 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
         }
       }
       
-      // Update and draw particles
-      particlesRef.current = particlesRef.current.filter(particle => {
-        particle.x += particle.vx;
-        particle.y += particle.vy;
-        particle.life -= 0.02;
-        
-        if (particle.life > 0) {
-          ctx.fillStyle = particle.color;
-          ctx.globalAlpha = particle.life;
-          ctx.beginPath();
-          ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.globalAlpha = 1;
-          return true;
-        }
-        return false;
-      });
+      // Update and draw particles (skip on mobile)
+      if (!isMobile) {
+        particlesRef.current = particlesRef.current.filter(particle => {
+          particle.x += particle.vx;
+          particle.y += particle.vy;
+          particle.life -= 0.02;
+          if (particle.life > 0) {
+            ctx.fillStyle = particle.color;
+            ctx.globalAlpha = particle.life;
+            ctx.beginPath();
+            ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            return true;
+          }
+          return false;
+        });
+      }
       
       // Update pipe movement with difficulty
       pipesRef.current = pipesRef.current.filter(pipe => {
@@ -455,17 +467,18 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
         
         // Draw pipes
         const drawPipe = (x: number, height: number, isTop: boolean) => {
-          // Add shadow
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-          ctx.shadowBlur = 10;
-          ctx.shadowOffsetX = 5;
-          ctx.shadowOffsetY = 5;
-          
+          // Add shadow (skip on mobile)
+          if (!isMobile) {
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetX = 5;
+            ctx.shadowOffsetY = 5;
+          }
           // Main pipe body with gradient or debug color
           if (pipe.gradient) {
             ctx.fillStyle = pipe.gradient;
           } else {
-            ctx.fillStyle = '#FF0000'; // DEBUG: bright red if no gradient
+            ctx.fillStyle = '#4EC94E'; // fallback color
           }
           
           if (isTop) {
@@ -475,7 +488,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
             ctx.fillRect(x, 0, pipe.width, pipeHeight);
             
             // Reset shadow for decorative elements
-            ctx.shadowColor = 'transparent';
+            if (!isMobile) ctx.shadowColor = 'transparent';
             
             // Pipe cap with gradient (increased height to 25px)
             const capGradient = ctx.createLinearGradient(x - 5, pipeHeight - 25, x - 5, pipeHeight);
@@ -499,7 +512,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
             ctx.fillRect(x, startY, pipe.width, pipeHeight);
             
             // Reset shadow for decorative elements
-            ctx.shadowColor = 'transparent';
+            if (!isMobile) ctx.shadowColor = 'transparent';
             
             // Pipe cap with gradient (increased height to 25px)
             const capGradient = ctx.createLinearGradient(x - 5, startY, x - 5, startY + 25);
@@ -586,43 +599,44 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
         }
       }
       
-      // Update and draw cloud puffs
-      cloudPuffsRef.current = cloudPuffsRef.current.filter(puff => {
-        puff.size += puff.expandSpeed;
-        puff.opacity -= puff.fadeSpeed;
-        
-        if (puff.opacity > 0) {
-          // Draw cloud shape using multiple circles
-          const drawCloudBubble = (offsetX: number, offsetY: number, sizeMultiplier: number) => {
-            ctx.beginPath();
-            ctx.fillStyle = `rgba(255, 255, 255, ${puff.opacity})`;
-            ctx.arc(
-              puff.x + offsetX, 
-              puff.y + offsetY, 
-              puff.size * sizeMultiplier, 
-              0, 
-              Math.PI * 2
-            );
-            ctx.fill();
-          };
+      // Update and draw cloud puffs (skip on mobile)
+      if (!isMobile) {
+        cloudPuffsRef.current = cloudPuffsRef.current.filter(puff => {
+          puff.size += puff.expandSpeed;
+          puff.opacity -= puff.fadeSpeed;
+          if (puff.opacity > 0) {
+            // Draw cloud shape using multiple circles
+            const drawCloudBubble = (offsetX: number, offsetY: number, sizeMultiplier: number) => {
+              ctx.beginPath();
+              ctx.fillStyle = `rgba(255, 255, 255, ${puff.opacity})`;
+              ctx.arc(
+                puff.x + offsetX, 
+                puff.y + offsetY, 
+                puff.size * sizeMultiplier, 
+                0, 
+                Math.PI * 2
+              );
+              ctx.fill();
+            };
 
-          // Create cloud shape with multiple overlapping circles
-          drawCloudBubble(0, 0, 1);           // Center
-          drawCloudBubble(-puff.size/2, 0, 0.7);  // Left
-          drawCloudBubble(puff.size/2, 0, 0.7);   // Right
-          drawCloudBubble(0, -puff.size/3, 0.6);  // Top
-          drawCloudBubble(0, puff.size/3, 0.6);   // Bottom
-          
-          // Add some smaller detail bubbles
-          drawCloudBubble(-puff.size/1.5, -puff.size/4, 0.4);
-          drawCloudBubble(puff.size/1.5, -puff.size/4, 0.4);
-          drawCloudBubble(-puff.size/3, puff.size/2, 0.3);
-          drawCloudBubble(puff.size/3, puff.size/2, 0.3);
-          
-          return true;
-        }
-        return false;
-      });
+            // Create cloud shape with multiple overlapping circles
+            drawCloudBubble(0, 0, 1);           // Center
+            drawCloudBubble(-puff.size/2, 0, 0.7);  // Left
+            drawCloudBubble(puff.size/2, 0, 0.7);   // Right
+            drawCloudBubble(0, -puff.size/3, 0.6);  // Top
+            drawCloudBubble(0, puff.size/3, 0.6);   // Bottom
+            
+            // Add some smaller detail bubbles
+            drawCloudBubble(-puff.size/1.5, -puff.size/4, 0.4);
+            drawCloudBubble(puff.size/1.5, -puff.size/4, 0.4);
+            drawCloudBubble(-puff.size/3, puff.size/2, 0.3);
+            drawCloudBubble(puff.size/3, puff.size/2, 0.3);
+            
+            return true;
+          }
+          return false;
+        });
+      }
       
       // Game over
       if (gameOver) {
@@ -749,17 +763,19 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
           {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
         </button>
         
+        {/* Hamburger/Menu Button: Larger and always accessible on mobile */}
+        <button 
+          className={`fixed top-4 right-4 z-50 bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 ${isMobile ? 'w-16 h-16 text-3xl' : ''}`}
+          style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
+          aria-label="Open customization menu"
+          onClick={() => setIsMenuOpen(true)}
+        >
+          <Menu size={isMobile ? 40 : 24} />
+        </button>
+        
         {/* Customization menu */}
-        <Sheet onOpenChange={setIsMenuOpen}>
-          <SheetTrigger asChild>
-            <button 
-              className="absolute top-4 right-4 z-10 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
-              aria-label="Open customization menu"
-            >
-              <Menu size={24} />
-            </button>
-          </SheetTrigger>
-          <SheetContent className="w-[400px] sm:w-[540px] bg-black/90 border-orange-500">
+        <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+          <SheetContent className="w-[90vw] max-w-[540px] bg-black/90 border-orange-500 z-50">
             <SheetHeader>
               <SheetTitle className="text-orange-500 text-xl pixel-font">Game Customization</SheetTitle>
             </SheetHeader>
@@ -775,6 +791,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
         <canvas 
           ref={canvasRef} 
           className="w-full h-full cursor-pointer pixel-rendering"
+          style={{ zIndex: 1 }}
         />
       </div>
       
