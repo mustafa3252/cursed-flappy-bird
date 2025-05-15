@@ -75,15 +75,8 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
   
   // Update bird image based on state
   const currentBirdImage = useCallback(() => {
-    switch (birdState) {
-      case 'up':
-        return birdUpImg;
-      case 'dead':
-        return birdDeadImg;
-      default:
-        return birdImg;
-    }
-  }, [birdState]);
+    return birdImageSrc;
+  }, [birdImageSrc]);
   
   // Update loadImages function to use current bird state
   const loadImages = useCallback(() => {
@@ -93,18 +86,20 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
     
     // Load background texture
     bgImageRef.current = new Image();
+    bgImageRef.current.crossOrigin = "anonymous";
     bgImageRef.current.src = backgroundImage;
     bgImageRef.current.onload = () => {
-      console.log('Background image loaded successfully:', {
-        width: bgImageRef.current?.width,
-        height: bgImageRef.current?.height,
-        src: bgImageRef.current?.src
-      });
       setBgImageLoaded(true);
+      console.log('Background image loaded successfully:', bgImageRef.current?.src);
     };
     bgImageRef.current.onerror = (error) => {
-      console.error('Failed to load background image:', error);
       setBgImageLoaded(false);
+      console.error('Failed to load background image:', backgroundImage, error);
+      // Fallback to default background image
+      bgImageRef.current.src = backgroundImg;
+      // Try to load the default image
+      bgImageRef.current.onload = () => setBgImageLoaded(true);
+      bgImageRef.current.onerror = () => setBgImageLoaded(false);
     };
     
     // Load bird image based on state
@@ -145,7 +140,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
     
     // Initialize mute state
     setIsMuted(soundManager.getMuteState());
-  }, []);
+  }, [backgroundImage, birdImageSrc, loadImages]);
   
   const pipesRef = useRef<Array<{
     x: number, 
@@ -224,6 +219,8 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
     });
   }, []);
   
+  const frameCountRef = useRef(0);
+  
   const startGame = useCallback(() => {
     soundManager.stopBackgroundMusic(); // Stop background music when game starts
     soundManager.play('start');
@@ -242,6 +239,9 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       frameCount: 0,
     };
     pipesRef.current = [];
+    setIsMenuOpen(false); // Ensure menu is closed when game starts
+    frameCountRef.current = 0; // Reset frame count
+    console.log('Game started!');
   }, []);
   
   // Separate function to handle game over
@@ -341,7 +341,6 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       return;
     }
     
-    let frameCount = 0;
     let animationFrameCount = 0;
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -365,13 +364,33 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       // Clear canvas and set background
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Draw background (simple repeating pattern)
+      // Draw background: blurred/dimmed stretched fill, then aspect-ratio-correct cover
       if (bgImageRef.current) {
-        const pattern = ctx.createPattern(bgImageRef.current, 'repeat');
-        if (pattern) {
-          ctx.fillStyle = pattern;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // 1. Blurred/dimmed stretched fill
+        ctx.save();
+        ctx.filter = 'blur(8px) brightness(0.7)';
+        ctx.drawImage(bgImageRef.current, 0, 0, canvas.width, canvas.height);
+        ctx.restore();
+
+        // 2. Aspect-ratio-correct cover (centered, cropped, no stretching)
+        const img = bgImageRef.current;
+        const canvasAspect = canvas.width / canvas.height;
+        const imgAspect = img.width / img.height;
+        let drawWidth, drawHeight, offsetX, offsetY;
+        if (imgAspect > canvasAspect) {
+          // Image is wider than canvas: crop sides
+          drawHeight = canvas.height;
+          drawWidth = img.width * (canvas.height / img.height);
+          offsetX = (canvas.width - drawWidth) / 2;
+          offsetY = 0;
+        } else {
+          // Image is taller than canvas: crop top/bottom
+          drawWidth = canvas.width;
+          drawHeight = img.height * (canvas.width / img.width);
+          offsetX = 0;
+          offsetY = (canvas.height - drawHeight) / 2;
         }
+        ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
       }
 
       // Draw ground
@@ -385,8 +404,8 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
         birdRef.current.y += birdRef.current.velocity;
         
         // Generate pipes with difficulty-based parameters
-        frameCount++;
-        if (frameCount % Math.floor(100 / difficultyRef.current) === 0) {
+        frameCountRef.current++;
+        if (frameCountRef.current % Math.floor(100 / difficultyRef.current) === 0) {
           const pipeGap = Math.max(120, pipeGapRef.current - (difficultyRef.current - 1) * 10);
           const minPipeHeight = 100;
           const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
@@ -406,6 +425,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
             gradient,
             speed: 3 + (difficultyRef.current - 1)
           });
+          console.log('Pipe generated:', pipesRef.current[pipesRef.current.length - 1]);
         }
       }
       
@@ -441,16 +461,17 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
           ctx.shadowOffsetX = 5;
           ctx.shadowOffsetY = 5;
           
-          // Main pipe body with gradient
+          // Main pipe body with gradient or debug color
           if (pipe.gradient) {
             ctx.fillStyle = pipe.gradient;
           } else {
-            ctx.fillStyle = '#4EC94E';
+            ctx.fillStyle = '#FF0000'; // DEBUG: bright red if no gradient
           }
           
           if (isTop) {
             // Top pipe
             const pipeHeight = height;
+            console.log('Drawing pipe at', x, 0, pipe.width, pipeHeight);
             ctx.fillRect(x, 0, pipe.width, pipeHeight);
             
             // Reset shadow for decorative elements
@@ -474,6 +495,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
             // Bottom pipe
             const startY = height;
             const pipeHeight = canvas.height - startY - groundHeight;
+            console.log('Drawing pipe at', x, startY, pipe.width, pipeHeight);
             ctx.fillRect(x, startY, pipe.width, pipeHeight);
             
             // Reset shadow for decorative elements
@@ -641,17 +663,6 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
     };
   }, []);
   
-  // Update bird image separately
-  useEffect(() => {
-    if (birdImageRef.current) {
-      const newSrc = currentBirdImage();
-      if (birdImageRef.current.src !== newSrc) {
-        console.log('Updating bird image to:', newSrc);
-        birdImageRef.current.src = newSrc;
-      }
-    }
-  }, [birdState, currentBirdImage]);
-  
   // Update difficulty based on score
   useEffect(() => {
     if (gameStarted && !gameOver) {
@@ -677,6 +688,20 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       soundManager.startBackgroundMusic();
     }
   }, [gameStarted, isMenuOpen]);
+  
+  useEffect(() => {
+    loadImages();
+  }, [backgroundImage, birdImageSrc, birdState]);
+  
+  useEffect(() => {
+    console.log('backgroundImage updated:', backgroundImage);
+  }, [backgroundImage]);
+  
+  useEffect(() => {
+    console.log('birdImageSrc updated:', birdImageSrc);
+  }, [birdImageSrc]);
+  
+  console.log('Pipes array:', pipesRef.current);
   
   return (
     <div className="flex flex-col items-center justify-center w-full h-full">
@@ -741,6 +766,8 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
             <GameCustomizationPanel
               onUpdateBackground={setBackgroundImage}
               onUpdateBird={setBirdImageSrc}
+              currentBackground={backgroundImage}
+              currentBird={birdImageSrc}
             />
           </SheetContent>
         </Sheet>
