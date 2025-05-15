@@ -1,4 +1,3 @@
-
 import { createRoot } from 'react-dom/client';
 import { BedrockPassportProvider } from "@bedrock_org/passport";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -14,7 +13,8 @@ createRoot(document.getElementById("root")!).render(
     <BedrockPassportProvider
       baseUrl="https://api.bedrockpassport.com"
       authCallbackUrl={`${window.location.origin}/auth/callback`}
-      tenantId="orange-mwjgxj6u2d" // Your project ID
+      tenantId="orange-auwsre55nr" // Updated Project ID
+      apiKey="70dedd7975714ba48eb440137c7b8e7a" // Added API Key
     >
       <App />
     </BedrockPassportProvider>
