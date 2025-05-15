@@ -44,15 +44,15 @@ const Index = () => {
       style={{ backgroundImage: `url(${backgroundImg})` }}
     >
       <header className="p-4 bg-black/80 shadow-md flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-orange-500 font-mono">Flappy Bird AI</h1>
+        <h1 className="text-2xl font-bold text-orange-500 font-mono">Cursed Flappy Bird</h1>
         <LoginButton />
       </header>
       
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="text-center max-w-2xl mx-auto bg-black/70 p-8 rounded-lg border-2 border-orange-500">
-          <h2 className="text-4xl font-bold mb-6 text-orange-500 font-mono">FLAPPY BIRD AI</h2>
+          <h2 className="text-4xl font-bold mb-6 text-orange-500 font-mono">CURSED FLAPPY BIRD</h2>
           <p className="text-xl text-gray-300 mb-8 font-mono">
-            Let Ai make this game wild 🐎, use it to edit bird, background and pipes 🥴
+            Let AI make this game wild 🐎, use it to edit bird, background and pipes 🥴
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <button 

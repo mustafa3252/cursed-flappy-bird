@@ -15,6 +15,7 @@ interface GameCustomizerProps {
   currentPipeBottom: string;
 }
 
+const OPENAI_API_KEY = "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"
 const GameCustomizer: React.FC<GameCustomizerProps> = ({
   onUpdateImage,
   currentBackground,
@@ -30,147 +31,54 @@ const GameCustomizer: React.FC<GameCustomizerProps> = ({
   const [backgroundGeneratedImages, setBackgroundGeneratedImages] = useState<string[]>([]);
   const [birdGeneratedImages, setBirdGeneratedImages] = useState<string[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(-1);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   
-  useEffect(() => {
-    // Check if we have a token in the URL (OAuth callback)
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    
-    if (code) {
-      exchangeCodeForToken(code);
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    
-    // Check if we have a stored token
-    const storedToken = localStorage.getItem('openai_access_token');
-    if (storedToken) {
-      setAccessToken(storedToken);
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  const handleLogin = () => {
-    const clientId = import.meta.env.VITE_OPENAI_CLIENT_ID;
-    const redirectUri = window.location.origin + window.location.pathname;
-    const scope = 'image.create';
-    
-    const authUrl = `https://auth.openai.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}`;
-    
-    window.location.href = authUrl;
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('openai_access_token');
-    setAccessToken(null);
-    setIsAuthenticated(false);
-  };
-
-  const exchangeCodeForToken = async (code: string) => {
-    try {
-      const response = await fetch('https://auth.openai.com/oauth/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          client_id: import.meta.env.VITE_OPENAI_CLIENT_ID,
-          client_secret: import.meta.env.VITE_OPENAI_CLIENT_SECRET,
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: window.location.origin + window.location.pathname,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to exchange code for token');
-      }
-
-      const data = await response.json();
-      localStorage.setItem('openai_access_token', data.access_token);
-      setAccessToken(data.access_token);
-      setIsAuthenticated(true);
-    } catch (error) {
-      console.error('Error exchanging code for token:', error);
-      alert('Failed to complete authentication. Please try again.');
-    }
-  };
-
-  // AI image generation using OpenAI's DALL-E
   const generateImages = useCallback(async (type: string, prompt: string) => {
     if (!prompt.trim()) {
       alert("Please enter a prompt for the AI");
       return;
     }
-    
-    if (!isAuthenticated || !accessToken) {
-      alert("Please sign in with your OpenAI account first");
-      return;
-    }
-    
     setLoading(type);
-    
     try {
-      console.log('Starting image generation with prompt:', prompt);
+      // Build request body
+      const body: any = {
+        model: "dall-e-2",
+        prompt: prompt,
+        n: 1,
+        size: "1024x1024"
+      };
       const response = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: "dall-e-3",
-          prompt: prompt,
-          n: 1,
-          size: "1024x1024",
-          quality: "standard",
-          response_format: "url"
-        })
+        body: JSON.stringify(body)
       });
-
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('API Error Response:', errorData);
-        if (response.status === 401) {
-          // Token expired or invalid
-          handleLogout();
-          throw new Error('Session expired. Please sign in again.');
-        }
         throw new Error(`OpenAI API error: ${errorData}`);
       }
-
       const result = await response.json();
-      console.log('Generation result:', result);
-      
       if (!result.data || !Array.isArray(result.data) || result.data.length === 0) {
         throw new Error('No images generated in the response');
       }
-      
       const generatedUrls = result.data.map((item: any) => item.url);
-      
-      // Update state with generated image URLs
       if (type === 'background') {
         setBackgroundGeneratedImages(generatedUrls);
       } else {
         setBirdGeneratedImages(generatedUrls);
       }
       setSelectedImageIndex(-1);
-      
     } catch (error) {
-      console.error("Error generating images:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Full error details:', error);
       alert(`Failed to generate images: ${errorMessage}`);
     } finally {
       setLoading(null);
     }
-  }, [isAuthenticated, accessToken]);
+  }, []);
 
   const handleSaveApiKey = (key: string) => {
-    setAccessToken(key);
-    localStorage.setItem('openai_access_token', key);
+    // This function is no longer used
   };
 
   const handleApplyGeneratedImage = useCallback((type: string) => {
@@ -209,26 +117,6 @@ const GameCustomizer: React.FC<GameCustomizerProps> = ({
   
   return (
     <div className="p-2 mt-4">
-      <div className="mb-4 flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={isAuthenticated ? handleLogout : handleLogin}
-        >
-          {isAuthenticated ? (
-            <>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </>
-          ) : (
-            <>
-              <LogIn className="w-4 h-4 mr-2" />
-              Sign in with OpenAI
-            </>
-          )}
-        </Button>
-      </div>
-
       <Tabs defaultValue="background">
         <TabsList className="grid grid-cols-2 mb-4">
           <TabsTrigger value="background">Background</TabsTrigger>
