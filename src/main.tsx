@@ -13,8 +13,7 @@ createRoot(document.getElementById("root")!).render(
     <BedrockPassportProvider
       baseUrl="https://api.bedrockpassport.com"
       authCallbackUrl={`${window.location.origin}/auth/callback`}
-      tenantId="orange-auwsre55nr" // Updated Project ID
-      apiKey="70dedd7975714ba48eb440137c7b8e7a" // Added API Key
+      tenantId="orange-auwsre55nr" // Project ID
     >
       <App />
     </BedrockPassportProvider>
