@@ -336,6 +336,23 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
   // Utility: Detect mobile device
   const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
   
+  // Mobile scaling and physics adjustments
+  const MOBILE_SCALE = isMobile ? 0.55 : 1;
+  const MOBILE_BIRD = {
+    width: 60 * MOBILE_SCALE,
+    height: 45 * MOBILE_SCALE,
+    gravity: isMobile ? 0.55 : 0.35,
+    flapStrength: isMobile ? -9.5 : -7.5,
+    x: 50 * MOBILE_SCALE,
+    y: 150 * MOBILE_SCALE
+  };
+  const MOBILE_PIPE = {
+    minWidth: 60 * MOBILE_SCALE,
+    maxWidth: 80 * MOBILE_SCALE,
+    gap: 160 * MOBILE_SCALE,
+    minPipeHeight: 60 * MOBILE_SCALE
+  };
+  
   useEffect(() => {
     if (!bgImageLoaded || !birdImageLoaded) {
       console.log('Game loop waiting for:', {
@@ -430,24 +447,21 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
         // Generate pipes with difficulty-based parameters
         frameCountRef.current++;
         if (frameCountRef.current % Math.floor(100 / difficultyRef.current) === 0) {
-          const pipeGap = Math.max(120, pipeGapRef.current - (difficultyRef.current - 1) * 10);
-          const minPipeHeight = 100;
+          const pipeGap = Math.max(MOBILE_PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10 * MOBILE_SCALE);
+          const minPipeHeight = MOBILE_PIPE.minPipeHeight;
           const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
           const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
-          
-          // Random width between 70 and 90
-          const width = Math.floor(Math.random() * 20) + 70;
-          
+          // Random width between min and max
+          const width = Math.floor(Math.random() * (MOBILE_PIPE.maxWidth - MOBILE_PIPE.minWidth)) + MOBILE_PIPE.minWidth;
           // No gradients on mobile
           const gradient = isMobile ? undefined : createPipeGradient(ctx, width);
-          
           pipesRef.current.push({
             x: canvas.width,
             topHeight,
             passed: false,
             width,
             gradient,
-            speed: 3 + (difficultyRef.current - 1)
+            speed: (isMobile ? 4.2 : 3) + (difficultyRef.current - 1) * (isMobile ? 0.7 : 1)
           });
           console.log('Pipe generated:', pipesRef.current[pipesRef.current.length - 1]);
         }
@@ -743,7 +757,9 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
   
   console.log('Pipes array:', pipesRef.current);
   
-  const { isLoggedIn } = useBedrockPassport();
+  // DEV: Bypass OrangeID login for now
+  const isLoggedIn = true;
+  const { signOut } = useBedrockPassport();
   
   return (
     <div className="flex flex-col items-center justify-center w-full h-full">
@@ -841,16 +857,29 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
         
         {/* Customization menu */}
         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-          <SheetContent className="w-[90vw] max-w-[540px] bg-black/90 border-orange-500 z-[1002]">
+          <SheetContent className="w-[90vw] max-w-[540px] bg-black/90 border-orange-500 z-[1002] flex flex-col h-full">
             <SheetHeader>
               <SheetTitle className="text-orange-500 text-xl pixel-font">Game Customization</SheetTitle>
             </SheetHeader>
-            <GameCustomizationPanel
-              onUpdateBackground={setBackgroundImage}
-              onUpdateBird={setBirdImageSrc}
-              currentBackground={backgroundImage}
-              currentBird={birdImageSrc}
-            />
+            <div className="flex-1 overflow-y-auto">
+              <GameCustomizationPanel
+                onUpdateBackground={setBackgroundImage}
+                onUpdateBird={setBirdImageSrc}
+                currentBackground={backgroundImage}
+                currentBird={birdImageSrc}
+              />
+            </div>
+            {isLoggedIn && (
+              <Button
+                className="mt-6 mb-2 w-full text-lg font-bold pixel-font bg-white text-black border border-gray-300 hover:bg-gray-100 hover:text-black"
+                onClick={async () => {
+                  await signOut();
+                  setIsMenuOpen(false);
+                }}
+              >
+                Logout
+              </Button>
+            )}
           </SheetContent>
         </Sheet>
         
