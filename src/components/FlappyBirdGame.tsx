@@ -40,6 +40,9 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
   const [pipeTopImage, setPipeTopImage] = useState(pipeTopImg);
   const [pipeBottomImage, setPipeBottomImage] = useState(pipeBottomImg);
   
+  // Utility: Detect mobile device (move up so it's available for flapStrength)
+  const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+  
   // Remove parallax refs
   
   const gameLoopRef = useRef<number | null>(null);
@@ -48,7 +51,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
     y: 150,
     velocity: 0,
     gravity: 0.35,
-    flapStrength: -7.5,
+    flapStrength: isMobile ? -7.0 : -5.5,
     width: 60,
     height: 45,
     frame: 0,
@@ -233,7 +236,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       y: 150,
       velocity: 0,
       gravity: 0.35,
-      flapStrength: -7.5,
+      flapStrength: isMobile ? -7.0 : -5.5,
       width: 60,
       height: 45,
       frame: 0,
@@ -332,9 +335,6 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       window.removeEventListener('touchstart', handleTouchStart);
     };
   }, [handleKeyDown, handleTouchStart]);
-  
-  // Utility: Detect mobile device
-  const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
   
   useEffect(() => {
     if (!bgImageLoaded || !birdImageLoaded) {
