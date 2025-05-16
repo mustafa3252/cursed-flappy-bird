@@ -11,6 +11,7 @@ import birdUpImg from '@/assets/birdUp.png';
 import birdDeadImg from '@/assets/birdDead.png';
 import pipeTopImg from '@/assets/pipeTop.png';
 import pipeBottomImg from '@/assets/pipeBottom.png';
+import { useBedrockPassport, LoginPanel } from "@bedrock_org/passport";
 
 // Debug log imports
 console.log('Bird image imports:', {
@@ -742,8 +743,45 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
   
   console.log('Pipes array:', pipesRef.current);
   
+  const { isLoggedIn } = useBedrockPassport();
+  
   return (
     <div className="flex flex-col items-center justify-center w-full h-full">
+      {/* OrangeID login overlay */}
+      {!isLoggedIn && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90" style={{backdropFilter: 'blur(4px)'}}>
+          <div className="bg-black/90 rounded-2xl border-2 border-orange-500 p-6 max-w-[480px] w-full flex flex-col items-center">
+            <img
+              src="https://irp.cdn-website.com/e81c109a/dms3rep/multi/orange-web3-logo-v2a-20241018.svg"
+              alt="Orange Web3"
+              className="h-12 mb-4"
+            />
+            <h2 className="text-2xl font-bold text-orange-500 mb-4">Sign in to play</h2>
+            <LoginPanel
+              title="Sign in to"
+              logo="https://irp.cdn-website.com/e81c109a/dms3rep/multi/orange-web3-logo-v2a-20241018.svg"
+              logoAlt="Orange Web3"
+              walletButtonText="Connect Wallet"
+              showConnectWallet={false}
+              separatorText="OR"
+              features={{
+                enableWalletConnect: false,
+                enableAppleLogin: true,
+                enableGoogleLogin: true,
+                enableEmailLogin: false,
+              }}
+              titleClass="text-xl font-bold"
+              logoClass="ml-2 md:h-8 h-6"
+              panelClass="container p-2 md:p-8 rounded-2xl max-w-[480px]"
+              buttonClass="hover:border-orange-500"
+              separatorTextClass="bg-orange-900 text-gray-500"
+              separatorClass="bg-orange-900"
+              linkRowClass="justify-center"
+              headerClass="justify-center"
+            />
+          </div>
+        </div>
+      )}
       {!gameStarted && !gameOver && (
         <div className="text-center z-10 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
           <p className="text-2xl font-bold text-white pixel-font mb-4">
