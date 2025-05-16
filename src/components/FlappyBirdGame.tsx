@@ -743,7 +743,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
   
   console.log('Pipes array:', pipesRef.current);
   
-  const { isLoggedIn } = useBedrockPassport();
+  const { isLoggedIn, signOut } = useBedrockPassport();
   
   return (
     <div className="flex flex-col items-center justify-center w-full h-full">
@@ -841,16 +841,29 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
         
         {/* Customization menu */}
         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-          <SheetContent className="w-[90vw] max-w-[540px] bg-black/90 border-orange-500 z-[1002]">
+          <SheetContent className="w-[90vw] max-w-[540px] bg-black/90 border-orange-500 z-[1002] flex flex-col h-full">
             <SheetHeader>
               <SheetTitle className="text-orange-500 text-xl pixel-font">Game Customization</SheetTitle>
             </SheetHeader>
-            <GameCustomizationPanel
-              onUpdateBackground={setBackgroundImage}
-              onUpdateBird={setBirdImageSrc}
-              currentBackground={backgroundImage}
-              currentBird={birdImageSrc}
-            />
+            <div className="flex-1 overflow-y-auto">
+              <GameCustomizationPanel
+                onUpdateBackground={setBackgroundImage}
+                onUpdateBird={setBirdImageSrc}
+                currentBackground={backgroundImage}
+                currentBird={birdImageSrc}
+              />
+            </div>
+            {isLoggedIn && (
+              <Button
+                className="mt-6 mb-2 w-full text-lg font-bold pixel-font bg-white text-black border border-gray-300 hover:bg-gray-100 hover:text-black"
+                onClick={async () => {
+                  await signOut();
+                  setIsMenuOpen(false);
+                }}
+              >
+                Logout
+              </Button>
+            )}
           </SheetContent>
         </Sheet>
         
