@@ -236,7 +236,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       y: 150,
       velocity: 0,
       gravity: 0.35,
-      flapStrength: isMobile ? -7.0 : -5.5,
+      flapStrength: isMobile ? -8.0 : -6.0,
       width: 60,
       height: 45,
       frame: 0,
