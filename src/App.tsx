@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +6,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AuthCallback from "./pages/AuthCallback";
 import GamePage from "./pages/GamePage";
+import { Analytics } from "@vercel/analytics/react";
 
 const App = () => (
   <TooltipProvider>
@@ -21,6 +21,7 @@ const App = () => (
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
+    <Analytics />
   </TooltipProvider>
 );
 
