@@ -749,8 +749,8 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
     <div className="flex flex-col items-center justify-center w-full h-full">
       {/* OrangeID login overlay */}
       {!isLoggedIn && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90" style={{backdropFilter: 'blur(4px)'}}>
-          <div className="bg-black/90 rounded-2xl border-2 border-orange-500 p-6 max-w-[480px] w-full flex flex-col items-center">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90" style={{backdropFilter: 'blur(4px)', pointerEvents: 'auto'}}>
+          <div className="bg-black/90 rounded-2xl border-2 border-orange-500 p-6 max-w-[480px] w-full flex flex-col items-center" style={{pointerEvents: 'auto'}}>
             <img
               src="https://irp.cdn-website.com/e81c109a/dms3rep/multi/orange-web3-logo-v2a-20241018.svg"
               alt="Orange Web3"
@@ -815,8 +815,8 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       <div 
         className="w-full h-full flex items-center justify-center relative"
         onClick={handleInteraction}
-        onTouchStart={(e) => e.preventDefault()}
-        style={{ touchAction: 'none' }}
+        onTouchStart={isLoggedIn ? (e) => e.preventDefault() : undefined}
+        style={{ touchAction: isLoggedIn ? 'none' : undefined }}
       >
         {/* Mute button */}
         <button 
