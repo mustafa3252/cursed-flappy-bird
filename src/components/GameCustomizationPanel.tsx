@@ -15,6 +15,13 @@ interface GameCustomizationPanelProps {
 
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
+// Add this helper to convert data URL to File
+function dataURLtoFile(dataurl: string, filename: string) {
+  const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+  for (let i = 0; i < n; i++) u8arr[i] = bstr.charCodeAt(i);
+  return new File([u8arr], filename, { type: mime });
+}
+
 const GameCustomizationPanel: React.FC<GameCustomizationPanelProps> = ({
   onUpdateBackground,
   onUpdateBird,
@@ -41,6 +48,50 @@ const GameCustomizationPanel: React.FC<GameCustomizationPanelProps> = ({
     }
     setLoading(type);
     try {
+      // If editing an uploaded bird image, use DALL-E 2 edits endpoint
+      if (type === 'bird' && uploadedImage) {
+        // DALL-E 2 edits endpoint requires multipart/form-data
+        const formData = new FormData();
+        // Convert uploadedImage (data URL) to File
+        const imageFile = dataURLtoFile(uploadedImage, 'uploaded.png');
+        formData.append('image', imageFile);
+        // DALL-E 2 requires a mask, but if you want to edit the whole image, use a white mask
+        // We'll create a white PNG mask of the same size
+        const maskCanvas = document.createElement('canvas');
+        maskCanvas.width = 1024;
+        maskCanvas.height = 1024;
+        const ctx = maskCanvas.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, 1024, 1024);
+        const maskDataUrl = maskCanvas.toDataURL('image/png');
+        const maskFile = dataURLtoFile(maskDataUrl, 'mask.png');
+        formData.append('mask', maskFile);
+        formData.append('prompt', prompt);
+        formData.append('n', '1');
+        formData.append('size', '1024x1024');
+        formData.append('response_format', 'b64_json');
+        const response = await fetch('https://api.openai.com/v1/images/edits', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENAI_API_KEY}`
+          },
+          body: formData
+        });
+        if (!response.ok) {
+          const errorData = await response.text();
+          throw new Error(`OpenAI API error: ${errorData}`);
+        }
+        const result = await response.json();
+        if (!result.data || !Array.isArray(result.data) || result.data.length === 0) {
+          throw new Error('No images generated in the response');
+        }
+        const generatedUrls = result.data.map((item: any) => `data:image/png;base64,${item.b64_json}`);
+        setBirdGeneratedImages(generatedUrls);
+        setSelectedImageIndex(-1);
+        setLoading(null);
+        return;
+      }
+      // Otherwise, use DALL-E 3 for prompt-to-image
       let finalPrompt = prompt;
       if (type === 'background') {
         finalPrompt = `${prompt}, 1920x1080`;
@@ -82,7 +133,7 @@ const GameCustomizationPanel: React.FC<GameCustomizationPanelProps> = ({
     } finally {
       setLoading(null);
     }
-  }, []);
+  }, [uploadedImage]);
 
   // Handler to apply selected background image
   const handleApplyBackground = (url: string) => {
@@ -215,7 +266,7 @@ const GameCustomizationPanel: React.FC<GameCustomizationPanelProps> = ({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="birdPrompt">Generate with AI</Label>
+            <Label htmlFor="birdPrompt">{uploadedImage ? 'Edit Uploaded Image with AI' : 'Generate with AI'}</Label>
             <div className="flex gap-2">
               <Input 
                 id="birdPrompt" 
