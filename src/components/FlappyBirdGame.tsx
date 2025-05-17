@@ -803,7 +803,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       >
         {/* Mute button */}
         <button 
-          className={`fixed top-2 left-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 ${isMobile ? 'w-10 h-10 p-2 text-lg' : 'w-12 h-12 p-3 text-xl'}`}
+          className={`fixed top-2 left-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center ${isMobile ? 'w-10 h-10 p-2 text-lg' : 'w-12 h-12 p-3 text-xl'}`}
           onClick={toggleMute}
           style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
         >
@@ -812,7 +812,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
         
         {/* Hamburger/Menu Button: Same size as mute button */}
         <button 
-          className={`fixed top-2 right-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 ${isMobile ? 'w-10 h-10 p-2 text-lg' : 'w-12 h-12 p-3 text-xl'}`}
+          className={`fixed top-2 right-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center ${isMobile ? 'w-10 h-10 p-2 text-lg' : 'w-12 h-12 p-3 text-xl'}`}
           style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
           aria-label="Open customization menu"
           onClick={(e) => {
