@@ -735,7 +735,11 @@
       <>
         {/* OrangeID login overlay OUTSIDE the game container */}
         {!isLoggedIn && (
-          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90" style={{backdropFilter: 'blur(4px)', pointerEvents: 'auto'}}>
+          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90"
+            style={{backdropFilter: 'blur(4px)', pointerEvents: 'auto'}} 
+            onClick={e => e.stopPropagation()}
+            onTouchStart={e => e.stopPropagation()}
+          >
             <div className="bg-black/90 rounded-2xl border-2 border-orange-500 p-6 max-w-[480px] w-full flex flex-col items-center" style={{pointerEvents: 'auto'}}>
               <img
                 src="https://irp.cdn-website.com/e81c109a/dms3rep/multi/orange-web3-logo-v2a-20241018.svg"
