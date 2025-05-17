@@ -811,9 +811,9 @@
             {isMuted ? <VolumeX size={isMobile ? 20 : 24} /> : <Volume2 size={isMobile ? 20 : 24} />}
           </button>
           
-          {/* Hamburger/Menu Button: Same size as mute button */}
+          {/* Customization Button: replaces hamburger/menu icon */}
           <button 
-            className={`fixed top-2 right-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center ${isMobile ? 'w-10 h-10 p-2 text-lg' : 'w-12 h-12 p-3 text-xl'}`}
+            className={`fixed top-2 right-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center font-bold ${isMobile ? 'w-auto h-10 px-4 py-2 text-base' : 'w-auto h-12 px-6 py-3 text-lg'}`}
             style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
             aria-label="Open customization menu"
             onClick={(e) => {
@@ -822,7 +822,7 @@
             }}
             onTouchStart={e => e.stopPropagation()}
           >
-            <Menu size={isMobile ? 20 : 24} />
+            Change with AI
           </button>
           
           {/* Customization menu */}
