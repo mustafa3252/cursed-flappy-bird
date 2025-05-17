@@ -262,33 +262,6 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
     setIsMenuOpen(false); // Ensure menu is closed when game starts
     frameCountRef.current = 0; // Reset frame count
     console.log('Game started!');
-
-    // Preload pipes for desktop only
-    if (!isMobile) {
-      const preloadCount = 5;
-      const pipeSpacing = 140; // match desktop pipeInterval
-      const groundHeight = 20;
-      for (let i = 0; i < preloadCount; i++) {
-        // Calculate random pipe height
-        const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
-        const minPipeHeight = PIPE.minPipeHeight;
-        const maxPipeHeight = window.innerHeight - groundHeight - pipeGap - minPipeHeight;
-        const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
-        const width = Math.floor(Math.random() * (PIPE.maxWidth - PIPE.minWidth)) + PIPE.minWidth;
-        // Use the same gradient logic as in the game loop
-        const canvas = canvasRef.current;
-        const ctx = canvas?.getContext('2d');
-        const gradient = ctx ? createPipeGradient(ctx, width) : undefined;
-        pipesRef.current.push({
-          x: window.innerWidth + i * pipeSpacing,
-          topHeight,
-          passed: false,
-          width,
-          gradient,
-          speed: 3 + (difficultyRef.current - 1)
-        });
-      }
-    }
   }, [isMobile]);
   
   // Separate function to handle game over
@@ -634,7 +607,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       if (gameStarted) {
         // Draw current score
         ctx.fillStyle = 'white';
-        ctx.font = '30px "Courier New", monospace';
+        ctx.font = isMobile ? '20px "Courier New", monospace' : '30px "Courier New", monospace';
         ctx.textAlign = 'center';
         ctx.fillText(`${score}`, canvas.width / 2, 50);
       }
@@ -803,10 +776,10 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       )}
       {!gameStarted && !gameOver && (
         <div className="text-center z-10 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-          <p className="text-2xl font-bold text-white pixel-font mb-4">
+          <p className={`font-bold text-white pixel-font mb-4 ${isMobile ? 'text-lg' : 'text-2xl'}`}> 
             HIGH SCORE: {highScore}
           </p>
-          <p className="text-4xl font-bold text-white pixel-font animate-flash">
+          <p className={`font-bold text-white pixel-font animate-flash ${isMobile ? 'text-2xl' : 'text-4xl'}`}>
             TOUCH OR PRESS SPACEBAR TO START
           </p>
         </div>
@@ -815,18 +788,10 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       {gameOver && (
         <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
           <div className="text-center bg-black/90 p-8 rounded-lg border-2 border-white pointer-events-auto">
-            <p className="text-4xl font-bold text-red-500 pixel-font mb-4">
-              GAME OVER
-            </p>
-            <p className="text-2xl font-bold text-white pixel-font mb-2">
-              SCORE: {score}
-            </p>
-            <p className="text-xl font-bold text-orange-500 pixel-font mb-8">
-              HIGH SCORE: {highScore}
-            </p>
-            <p className="text-xl font-bold text-white pixel-font animate-flash">
-              TOUCH OR PRESS SPACEBAR TO RETRY
-            </p>
+            <p className={`font-bold text-red-500 pixel-font mb-4 ${isMobile ? 'text-2xl' : 'text-4xl'}`}>GAME OVER</p>
+            <p className={`font-bold text-white pixel-font mb-2 ${isMobile ? 'text-lg' : 'text-2xl'}`}>SCORE: {score}</p>
+            <p className={`font-bold text-orange-500 pixel-font mb-8 ${isMobile ? 'text-base' : 'text-xl'}`}>HIGH SCORE: {highScore}</p>
+            <p className={`font-bold text-white pixel-font animate-flash ${isMobile ? 'text-lg' : 'text-xl'}`}>TOUCH OR PRESS SPACEBAR TO RETRY</p>
           </div>
         </div>
       )}
@@ -838,16 +803,16 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       >
         {/* Mute button */}
         <button 
-          className={`fixed top-4 left-4 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 ${isMobile ? 'w-16 h-16 p-4 text-3xl' : 'w-12 h-12 p-3 text-xl'}`}
+          className={`fixed top-2 left-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 ${isMobile ? 'w-10 h-10 p-2 text-lg' : 'w-12 h-12 p-3 text-xl'}`}
           onClick={toggleMute}
           style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
         >
-          {isMuted ? <VolumeX size={isMobile ? 40 : 24} /> : <Volume2 size={isMobile ? 40 : 24} />}
+          {isMuted ? <VolumeX size={isMobile ? 20 : 24} /> : <Volume2 size={isMobile ? 20 : 24} />}
         </button>
         
         {/* Hamburger/Menu Button: Same size as mute button */}
         <button 
-          className={`fixed top-4 right-4 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 ${isMobile ? 'w-16 h-16 p-4 text-3xl' : 'w-12 h-12 p-3 text-xl'}`}
+          className={`fixed top-2 right-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 ${isMobile ? 'w-10 h-10 p-2 text-lg' : 'w-12 h-12 p-3 text-xl'}`}
           style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
           aria-label="Open customization menu"
           onClick={(e) => {
@@ -855,7 +820,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
             setIsMenuOpen(true);
           }}
         >
-          <Menu size={isMobile ? 40 : 24} />
+          <Menu size={isMobile ? 20 : 24} />
         </button>
         
         {/* Customization menu */}
