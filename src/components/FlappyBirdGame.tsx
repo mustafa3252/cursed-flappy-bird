@@ -445,7 +445,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
           // No gradients on mobile
           const gradient = isMobile ? undefined : createPipeGradient(ctx, width);
           pipesRef.current.push({
-            x: canvas.width,
+            x: isMobile ? canvas.width : canvas.width - 120,
             topHeight,
             passed: false,
             width,
