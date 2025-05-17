@@ -50,45 +50,66 @@ const GameCustomizationPanel: React.FC<GameCustomizationPanelProps> = ({
     try {
       // If editing an uploaded bird image, use DALL-E 2 edits endpoint
       if (type === 'bird' && uploadedImage) {
-        // DALL-E 2 edits endpoint requires multipart/form-data
-        const formData = new FormData();
-        // Convert uploadedImage (data URL) to File
-        const imageFile = dataURLtoFile(uploadedImage, 'uploaded.png');
-        formData.append('image', imageFile);
-        // DALL-E 2 requires a mask, but if you want to edit the whole image, use a fully transparent mask
-        // We'll create a fully transparent PNG mask of the same size
-        const maskCanvas = document.createElement('canvas');
-        maskCanvas.width = 1024;
-        maskCanvas.height = 1024;
-        const ctx = maskCanvas.getContext('2d');
-        // Fill with fully transparent pixels
-        ctx.clearRect(0, 0, 1024, 1024);
-        const maskDataUrl = maskCanvas.toDataURL('image/png');
-        const maskFile = dataURLtoFile(maskDataUrl, 'mask.png');
-        formData.append('mask', maskFile);
-        formData.append('prompt', prompt);
-        formData.append('n', '1');
-        formData.append('size', '1024x1024');
-        formData.append('response_format', 'b64_json');
-        const response = await fetch('https://api.openai.com/v1/images/edits', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENAI_API_KEY}`
-          },
-          body: formData
-        });
-        if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(`OpenAI API error: ${errorData}`);
-        }
-        const result = await response.json();
-        if (!result.data || !Array.isArray(result.data) || result.data.length === 0) {
-          throw new Error('No images generated in the response');
-        }
-        const generatedUrls = result.data.map((item: any) => `data:image/png;base64,${item.b64_json}`);
-        setBirdGeneratedImages(generatedUrls);
-        setSelectedImageIndex(-1);
-        setLoading(null);
+        // Draw uploaded image onto a 1024x1024 canvas (centered, with transparent background)
+        const img = new window.Image();
+        img.onload = async () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1024;
+          canvas.height = 1024;
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, 1024, 1024);
+          // Calculate scaling and centering
+          const scale = Math.min(1024 / img.width, 1024 / img.height);
+          const w = img.width * scale;
+          const h = img.height * scale;
+          const x = (1024 - w) / 2;
+          const y = (1024 - h) / 2;
+          ctx.drawImage(img, x, y, w, h);
+          const dataUrl = canvas.toDataURL('image/png');
+          const imageFile = dataURLtoFile(dataUrl, 'uploaded.png');
+
+          // DALL-E 2 requires a mask, use a fully transparent mask
+          const maskCanvas = document.createElement('canvas');
+          maskCanvas.width = 1024;
+          maskCanvas.height = 1024;
+          const maskCtx = maskCanvas.getContext('2d');
+          maskCtx.clearRect(0, 0, 1024, 1024);
+          const maskDataUrl = maskCanvas.toDataURL('image/png');
+          const maskFile = dataURLtoFile(maskDataUrl, 'mask.png');
+
+          const formData = new FormData();
+          formData.append('image', imageFile);
+          formData.append('mask', maskFile);
+          formData.append('prompt', prompt);
+          formData.append('n', '1');
+          formData.append('size', '1024x1024');
+          formData.append('response_format', 'b64_json');
+
+          const response = await fetch('https://api.openai.com/v1/images/edits', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${OPENAI_API_KEY}`
+            },
+            body: formData
+          });
+          if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(`OpenAI API error: ${errorData}`);
+          }
+          const result = await response.json();
+          if (!result.data || !Array.isArray(result.data) || result.data.length === 0) {
+            throw new Error('No images generated in the response');
+          }
+          const generatedUrls = result.data.map((item: any) => `data:image/png;base64,${item.b64_json}`);
+          setBirdGeneratedImages(generatedUrls);
+          setSelectedImageIndex(-1);
+          setLoading(null);
+        };
+        img.onerror = () => {
+          setLoading(null);
+          alert('Failed to load uploaded image for editing.');
+        };
+        img.src = uploadedImage;
         return;
       }
       // Otherwise, use DALL-E 3 for prompt-to-image
