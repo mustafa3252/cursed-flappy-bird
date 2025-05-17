@@ -216,9 +216,9 @@
     
     // Mobile scaling and physics adjustments
     // Lower the mobile canvas resolution for performance
-    const MOBILE_CANVAS_WIDTH = 360;
-    const MOBILE_CANVAS_HEIGHT = 540;
-    const MOBILE_SCALE = isMobile ? 0.63 : 1; // 360/570 ≈ 0.63
+    const MOBILE_CANVAS_WIDTH = 320;
+    const MOBILE_CANVAS_HEIGHT = 480;
+    const MOBILE_SCALE = isMobile ? 0.56 : 1; // 360/570 ≈ 0.63
     const MOBILE_BIRD = {
       width: 60 * MOBILE_SCALE,
       height: 45 * MOBILE_SCALE,
@@ -242,8 +242,8 @@
         velocity: 0,
         gravity: isMobile ? 0.28 : 0.30,
         flapStrength: isMobile ? -6.0 : -7.5,
-        width: isMobile ? 32 : 60,
-        height: isMobile ? 24 : 45,
+        width: isMobile ? 36 : 60,
+        height: isMobile ? 28 : 45,
         frame: 0,
         frameCount: 0,
       };
