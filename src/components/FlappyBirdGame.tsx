@@ -793,15 +793,17 @@
         <div 
           className="w-full h-full flex items-center justify-center relative"
           onClick={handleInteraction}
-          onTouchStart={e => {
-            // If the user touched any interactive element, bail out:
-            const target = e.target as HTMLElement;
-            if (
-              target.closest('button, [role="button"], a, input, select, textarea, [tabindex]:not([tabindex="-1"])')
-            ) return;
-            e.preventDefault();      // block scrolling/zoom
-            handleInteraction();     // start/jump
-          }}
+          {...(isLoggedIn ? {
+            onTouchStart: (e: React.TouchEvent) => {
+              // If the user touched any interactive element, bail out:
+              const target = e.target as HTMLElement;
+              if (
+                target.closest('button, [role="button"], a, input, select, textarea, [tabindex]:not([tabindex="-1"])')
+              ) return;
+              e.preventDefault();      // block scrolling/zoom
+              handleInteraction();     // start/jump
+            }
+          } : {})}
         >
           {/* Mute button */}
           <button 
