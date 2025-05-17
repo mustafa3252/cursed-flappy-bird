@@ -369,17 +369,23 @@
       // Define groundHeight here so it's available throughout the effect
       const groundHeight = 20;
       
-      // Make canvas fill the container, but smaller on mobile
+      // Make canvas fill the container, but smaller on mobile, and use devicePixelRatio for sharpness
       const updateCanvasSize = () => {
         if (canvas) {
+          const dpr = window.devicePixelRatio || 1;
           if (isMobile) {
-            // Use a much smaller, fixed aspect ratio for mobile
-            canvas.width = MOBILE_CANVAS_WIDTH;
-            canvas.height = MOBILE_CANVAS_HEIGHT;
+            canvas.width = MOBILE_CANVAS_WIDTH * dpr;
+            canvas.height = MOBILE_CANVAS_HEIGHT * dpr;
+            canvas.style.width = `${MOBILE_CANVAS_WIDTH}px`;
+            canvas.style.height = `${MOBILE_CANVAS_HEIGHT}px`;
           } else {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            canvas.style.width = `${window.innerWidth}px`;
+            canvas.style.height = `${window.innerHeight}px`;
           }
+          ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset any existing transforms
+          ctx.scale(dpr, dpr);
         }
       };
       
@@ -857,8 +863,8 @@
           </Sheet>
           
           <canvas 
-            ref={canvasRef} 
-            className="w-full h-full cursor-pointer pixel-rendering"
+            ref={canvasRef}
+            className={`w-full h-full cursor-pointer${!isMobile ? ' pixel-rendering' : ''}`}
             style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: 1, willChange: 'transform', touchAction: 'none', pointerEvents: 'none' }}
           />
         </div>
