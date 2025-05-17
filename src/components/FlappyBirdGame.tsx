@@ -240,8 +240,8 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       x: 50,
       y: 150,
       velocity: 0,
-      gravity: isMobile ? 0.30 : 0.35,
-      flapStrength: -7.5,
+      gravity: isMobile ? 0.28 : 0.35,
+      flapStrength: isMobile ? -6.0 : -7.5,
       width: isMobile ? 40 : 60,
       height: isMobile ? 30 : 45,
       frame: 0,
@@ -578,18 +578,24 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
         try {
           // Save context state
           ctx.save();
-          
+          // On mobile, enable smoothing for the bird only
+          let prevSmoothing;
+          if (isMobile) {
+            prevSmoothing = ctx.imageSmoothingEnabled;
+            ctx.imageSmoothingEnabled = true;
+          }
           // Calculate rotation based on velocity
           const rotation = Math.min(Math.max(birdRef.current.velocity * 0.1, -0.5), 0.5);
-          
           // Translate to bird center, rotate, and translate back
           ctx.translate(x + width / 2, y + height / 2);
           ctx.rotate(rotation);
           ctx.translate(-(x + width / 2), -(y + height / 2));
-          
           // Draw the bird
           ctx.drawImage(birdImageRef.current, x, y, width, height);
-          
+          // Restore smoothing
+          if (isMobile) {
+            ctx.imageSmoothingEnabled = prevSmoothing;
+          }
           // Restore context state
           ctx.restore();
         } catch (error) {
