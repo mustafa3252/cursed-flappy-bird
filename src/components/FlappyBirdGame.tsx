@@ -242,8 +242,8 @@
         velocity: 0,
         gravity: isMobile ? 0.28 : 0.30,
         flapStrength: isMobile ? -6.0 : -7.5,
-        width: isMobile ? 40 : 60,
-        height: isMobile ? 30 : 45,
+        width: isMobile ? 32 : 60,
+        height: isMobile ? 24 : 45,
         frame: 0,
         frameCount: 0,
       };
@@ -373,12 +373,18 @@
       const updateCanvasSize = () => {
         if (canvas) {
           if (isMobile) {
-            // Use a much smaller, fixed aspect ratio for mobile
-            canvas.width = MOBILE_CANVAS_WIDTH;
-            canvas.height = MOBILE_CANVAS_HEIGHT;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = MOBILE_CANVAS_WIDTH * dpr;
+            canvas.height = MOBILE_CANVAS_HEIGHT * dpr;
+            canvas.style.width = `${MOBILE_CANVAS_WIDTH}px`;
+            canvas.style.height = `${MOBILE_CANVAS_HEIGHT}px`;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
           } else {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
           }
         }
       };
