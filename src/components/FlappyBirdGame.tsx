@@ -369,18 +369,17 @@
       // Define groundHeight here so it's available throughout the effect
       const groundHeight = 20;
       
-      // Make canvas fill the container and always fill the window, using devicePixelRatio for sharpness
+      // Make canvas fill the container, but smaller on mobile
       const updateCanvasSize = () => {
         if (canvas) {
-          const dpr = window.devicePixelRatio || 1;
-          const cssWidth = window.innerWidth;
-          const cssHeight = window.innerHeight;
-          canvas.width = cssWidth * dpr;
-          canvas.height = cssHeight * dpr;
-          canvas.style.width = `${cssWidth}px`;
-          canvas.style.height = `${cssHeight}px`;
-          ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset any existing transforms
-          ctx.scale(dpr, dpr);
+          if (isMobile) {
+            // Use a much smaller, fixed aspect ratio for mobile
+            canvas.width = MOBILE_CANVAS_WIDTH;
+            canvas.height = MOBILE_CANVAS_HEIGHT;
+          } else {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+          }
         }
       };
       
@@ -811,6 +810,7 @@
           <button 
             className={`fixed top-2 left-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center ${isMobile ? 'w-10 h-10 p-2 text-lg' : 'w-12 h-12 p-3 text-xl'}`}
             onClick={toggleMute}
+            onTouchStart={e => e.stopPropagation()}
             style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
           >
             {isMuted ? <VolumeX size={isMobile ? 20 : 24} /> : <Volume2 size={isMobile ? 20 : 24} />}
@@ -825,6 +825,7 @@
               e.stopPropagation();
               setIsMenuOpen(true);
             }}
+            onTouchStart={e => e.stopPropagation()}
           >
             <Menu size={isMobile ? 20 : 24} />
           </button>
@@ -858,8 +859,8 @@
           </Sheet>
           
           <canvas 
-            ref={canvasRef}
-            className={`w-full h-full cursor-pointer${!isMobile ? ' pixel-rendering' : ''}`}
+            ref={canvasRef} 
+            className="w-full h-full cursor-pointer pixel-rendering"
             style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: 1, willChange: 'transform', touchAction: 'none', pointerEvents: 'none' }}
           />
         </div>
