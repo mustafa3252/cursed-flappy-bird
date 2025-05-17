@@ -230,7 +230,7 @@
     const PIPE = {
       minWidth: isMobile ? 60 : 80,
       maxWidth: isMobile ? 80 : 110,
-      gap: isMobile ? 120 : 160,
+      gap: isMobile ? 120 : 200,
       minPipeHeight: 60
     };
     
