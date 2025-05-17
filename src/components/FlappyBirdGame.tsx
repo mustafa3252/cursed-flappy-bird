@@ -578,12 +578,9 @@
           try {
             // Save context state
             ctx.save();
-            // On mobile, enable smoothing for the bird only
-            let prevSmoothing;
-            if (isMobile) {
-              prevSmoothing = ctx.imageSmoothingEnabled;
-              ctx.imageSmoothingEnabled = true;
-            }
+            // Always enable smoothing for the bird
+            let prevSmoothing = ctx.imageSmoothingEnabled;
+            ctx.imageSmoothingEnabled = true;
             // Calculate rotation based on velocity
             const rotation = Math.min(Math.max(birdRef.current.velocity * 0.1, -0.5), 0.5);
             // Translate to bird center, rotate, and translate back
@@ -593,9 +590,7 @@
             // Draw the bird
             ctx.drawImage(birdImageRef.current, x, y, width, height);
             // Restore smoothing
-            if (isMobile) {
-              ctx.imageSmoothingEnabled = prevSmoothing;
-            }
+            ctx.imageSmoothingEnabled = prevSmoothing;
             // Restore context state
             ctx.restore();
           } catch (error) {
