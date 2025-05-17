@@ -228,8 +228,8 @@
       y: 150 * MOBILE_SCALE
     };
     const PIPE = {
-      minWidth: 60,
-      maxWidth: 80,
+      minWidth: isMobile ? 60 : 80,
+      maxWidth: isMobile ? 80 : 110,
       gap: isMobile ? 120 : 160,
       minPipeHeight: 60
     };
