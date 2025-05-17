@@ -251,6 +251,9 @@
 
     const birdRef = useRef(getInitialBird());
     
+    // Add a ref to track the game start time for floaty start
+    const startTimeRef = useRef<number | null>(null);
+    
     const startGame = useCallback(() => {
       soundManager.stopBackgroundMusic(); // Stop background music when game starts
       soundManager.play('start');
@@ -261,6 +264,7 @@
       pipesRef.current = [];
       setIsMenuOpen(false); // Ensure menu is closed when game starts
       frameCountRef.current = 0; // Reset frame count
+      startTimeRef.current = performance.now(); // Track when the game started
       console.log('Game started!');
     }, [isMobile]);
     
@@ -428,13 +432,22 @@
         
         // Only update bird position and generate pipes if game is started and menu is not open
         if (gameStarted && !gameOver && !isMenuOpen) {
-          // Update bird position
-          birdRef.current.velocity += birdRef.current.gravity;
+          // Floaty start for mobile: ramp up gravity over 1 second
+          let gravity = birdRef.current.gravity;
+          if (isMobile && startTimeRef.current && timestamp) {
+            const elapsed = Math.min(1, (timestamp - startTimeRef.current) / 1000); // 0 to 1
+            gravity = birdRef.current.gravity * elapsed;
+          }
+          birdRef.current.velocity += gravity;
           birdRef.current.y += birdRef.current.velocity;
           
           // Generate pipes with difficulty-based parameters
           frameCountRef.current++;
-          const pipeInterval = isMobile ? Math.floor(70 / difficultyRef.current) : Math.floor(140 / difficultyRef.current);
+          const pipeInterval = (() => {
+            const minPipeInterval = isMobile ? 40 : 80; // Minimum interval between pipes
+            const baseInterval = isMobile ? 70 : 140;
+            return Math.max(minPipeInterval, Math.floor(baseInterval / difficultyRef.current));
+          })();
           if (frameCountRef.current % pipeInterval === 0) {
             const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
             const minPipeHeight = PIPE.minPipeHeight;
