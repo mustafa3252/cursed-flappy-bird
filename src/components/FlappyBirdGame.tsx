@@ -43,17 +43,6 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
   // Remove parallax refs
   
   const gameLoopRef = useRef<number | null>(null);
-  const birdRef = useRef({
-    x: 50,
-    y: 150,
-    velocity: 0,
-    gravity: 0.35,
-    flapStrength: -7.5,
-    width: 60,
-    height: 45,
-    frame: 0,
-    frameCount: 0,
-  });
   
   // Define pipeGap constant here so it's available throughout the component
   const pipeGapRef = useRef(160);
@@ -128,7 +117,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       });
       setBirdImageLoaded(false);
     };
-  }, [backgroundImage, currentBirdImage, birdState]);
+  }, [backgroundImage, currentBirdImage]);
   
   // Image preloading and initial setup
   useEffect(() => {
@@ -141,7 +130,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
     
     // Initialize mute state
     setIsMuted(soundManager.getMuteState());
-  }, [backgroundImage, birdImageSrc, loadImages]);
+  }, [backgroundImage, birdImageSrc]);
   
   const pipesRef = useRef<Array<{
     x: number, 
@@ -222,28 +211,58 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
   
   const frameCountRef = useRef(0);
   
+  // Utility: Detect mobile device
+  const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+  
+  // Mobile scaling and physics adjustments
+  // Lower the mobile canvas resolution for performance
+  const MOBILE_CANVAS_WIDTH = 240;
+  const MOBILE_CANVAS_HEIGHT = 360;
+  const MOBILE_SCALE = isMobile ? 0.42 : 1; // 240/570 ≈ 0.42
+  const MOBILE_BIRD = {
+    width: 60 * MOBILE_SCALE,
+    height: 45 * MOBILE_SCALE,
+    gravity: isMobile ? 0.30 : 0.30,
+    flapStrength: isMobile ? -9.5 : -7.5,
+    x: 50 * MOBILE_SCALE,
+    y: 150 * MOBILE_SCALE
+  };
+  const PIPE = {
+    minWidth: 60,
+    maxWidth: 80,
+    gap: isMobile ? 120 : 160,
+    minPipeHeight: 60
+  };
+  
+  // Centralized function for initial bird state
+  function getInitialBird() {
+    return {
+      x: 50,
+      y: 150,
+      velocity: 0,
+      gravity: isMobile ? 0.30 : 0.35,
+      flapStrength: -7.5,
+      width: isMobile ? 40 : 60,
+      height: isMobile ? 30 : 45,
+      frame: 0,
+      frameCount: 0,
+    };
+  }
+
+  const birdRef = useRef(getInitialBird());
+  
   const startGame = useCallback(() => {
     soundManager.stopBackgroundMusic(); // Stop background music when game starts
     soundManager.play('start');
     setGameStarted(true);
     setGameOver(false);
     setScore(0);
-    birdRef.current = {
-      x: 50,
-      y: 150,
-      velocity: 0,
-      gravity: 0.35,
-      flapStrength: -7.5,
-      width: 60,
-      height: 45,
-      frame: 0,
-      frameCount: 0,
-    };
+    birdRef.current = getInitialBird();
     pipesRef.current = [];
     setIsMenuOpen(false); // Ensure menu is closed when game starts
     frameCountRef.current = 0; // Reset frame count
     console.log('Game started!');
-  }, []);
+  }, [isMobile]);
   
   // Separate function to handle game over
   const handleGameOver = useCallback(() => {
@@ -333,29 +352,6 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
     };
   }, [handleKeyDown, handleTouchStart]);
   
-  // Utility: Detect mobile device
-  const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
-  
-  // Mobile scaling and physics adjustments
-  // Lower the mobile canvas resolution for performance
-  const MOBILE_CANVAS_WIDTH = 240;
-  const MOBILE_CANVAS_HEIGHT = 360;
-  const MOBILE_SCALE = isMobile ? 0.42 : 1; // 240/570 ≈ 0.42
-  const MOBILE_BIRD = {
-    width: 60 * MOBILE_SCALE,
-    height: 45 * MOBILE_SCALE,
-    gravity: isMobile ? 0.55 : 0.35,
-    flapStrength: isMobile ? -9.5 : -7.5,
-    x: 50 * MOBILE_SCALE,
-    y: 150 * MOBILE_SCALE
-  };
-  const MOBILE_PIPE = {
-    minWidth: 60 * MOBILE_SCALE,
-    maxWidth: 80 * MOBILE_SCALE,
-    gap: 160 * MOBILE_SCALE,
-    minPipeHeight: 60 * MOBILE_SCALE
-  };
-  
   useEffect(() => {
     if (!bgImageLoaded || !birdImageLoaded) {
       console.log('Game loop waiting for:', {
@@ -391,18 +387,8 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
     window.addEventListener('resize', updateCanvasSize);
     
     let loopHandle: number | null = null;
-    let lastFrameTime = 0;
-    const mobileFrameDelay = 1000 / 24; // 24 FPS for mobile
     
     const gameLoop = (timestamp?: number) => {
-      // Throttle on mobile
-      if (isMobile) {
-        if (timestamp && timestamp - lastFrameTime < mobileFrameDelay) {
-          loopHandle = requestAnimationFrame(gameLoop);
-          return;
-        }
-        lastFrameTime = timestamp || 0;
-      }
       // Clear canvas and set background
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
@@ -448,13 +434,14 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
         
         // Generate pipes with difficulty-based parameters
         frameCountRef.current++;
-        if (frameCountRef.current % Math.floor(100 / difficultyRef.current) === 0) {
-          const pipeGap = Math.max(MOBILE_PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10 * MOBILE_SCALE);
-          const minPipeHeight = MOBILE_PIPE.minPipeHeight;
+        const pipeInterval = isMobile ? Math.floor(50 / difficultyRef.current) : Math.floor(100 / difficultyRef.current);
+        if (frameCountRef.current % pipeInterval === 0) {
+          const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
+          const minPipeHeight = PIPE.minPipeHeight;
           const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
           const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
           // Random width between min and max
-          const width = Math.floor(Math.random() * (MOBILE_PIPE.maxWidth - MOBILE_PIPE.minWidth)) + MOBILE_PIPE.minWidth;
+          const width = Math.floor(Math.random() * (PIPE.maxWidth - PIPE.minWidth)) + PIPE.minWidth;
           // No gradients on mobile
           const gradient = isMobile ? undefined : createPipeGradient(ctx, width);
           pipesRef.current.push({
@@ -496,15 +483,13 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
         
         // Draw pipes
         const drawPipe = (x: number, height: number, isTop: boolean) => {
-          // No shadow or gradients on mobile
-          if (!isMobile) {
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetX = 5;
-            ctx.shadowOffsetY = 5;
-          }
+          // Add shadow for all devices
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+          ctx.shadowBlur = 10;
+          ctx.shadowOffsetX = 5;
+          ctx.shadowOffsetY = 5;
           // Main pipe body with gradient or debug color
-          if (!isMobile && pipe.gradient) {
+          if (pipe.gradient) {
             ctx.fillStyle = pipe.gradient;
           } else {
             ctx.fillStyle = '#4EC94E'; // fallback color
@@ -517,16 +502,14 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
             ctx.fillRect(x, 0, pipe.width, pipeHeight);
             
             // Reset shadow for decorative elements
-            if (!isMobile) ctx.shadowColor = 'transparent';
+            ctx.shadowColor = 'transparent';
             
             // Pipe cap with gradient (increased height to 25px)
-            if (!isMobile) {
-              const capGradient = ctx.createLinearGradient(x - 5, pipeHeight - 25, x - 5, pipeHeight);
-              capGradient.addColorStop(0, '#2E912E');
-              capGradient.addColorStop(1, '#267A26');
-              ctx.fillStyle = capGradient;
-              ctx.fillRect(x - 5, pipeHeight - 25, pipe.width + 10, 25);
-            }
+            const capGradient = ctx.createLinearGradient(x - 5, pipeHeight - 25, x - 5, pipeHeight);
+            capGradient.addColorStop(0, '#2E912E');
+            capGradient.addColorStop(1, '#267A26');
+            ctx.fillStyle = capGradient;
+            ctx.fillRect(x - 5, pipeHeight - 25, pipe.width + 10, 25);
             
             // Add highlight
             ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
@@ -543,16 +526,14 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
             ctx.fillRect(x, startY, pipe.width, pipeHeight);
             
             // Reset shadow for decorative elements
-            if (!isMobile) ctx.shadowColor = 'transparent';
+            ctx.shadowColor = 'transparent';
             
             // Pipe cap with gradient (increased height to 25px)
-            if (!isMobile) {
-              const capGradient = ctx.createLinearGradient(x - 5, startY, x - 5, startY + 25);
-              capGradient.addColorStop(0, '#2E912E');
-              capGradient.addColorStop(1, '#267A26');
-              ctx.fillStyle = capGradient;
-              ctx.fillRect(x - 5, startY, pipe.width + 10, 25);
-            }
+            const capGradient = ctx.createLinearGradient(x - 5, startY, x - 5, startY + 25);
+            capGradient.addColorStop(0, '#2E912E');
+            capGradient.addColorStop(1, '#267A26');
+            ctx.fillStyle = capGradient;
+            ctx.fillRect(x - 5, startY, pipe.width + 10, 25);
             
             // Add highlight
             ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
@@ -566,7 +547,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
 
         // Draw both pipes
         drawPipe(pipe.x, pipe.topHeight, true);
-        drawPipe(pipe.x, pipe.topHeight + pipeGapRef.current, false);
+        drawPipe(pipe.x, pipe.topHeight + PIPE.gap, false);
         
         // Only do collision and scoring if game is started
         if (gameStarted && !gameOver) {
@@ -582,7 +563,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
             birdRef.current.x + birdRef.current.width > pipe.x &&
             birdRef.current.x < pipe.x + pipe.width &&
             (birdRef.current.y < pipe.topHeight || 
-             birdRef.current.y + birdRef.current.height > pipe.topHeight + pipeGapRef.current)
+             birdRef.current.y + birdRef.current.height > pipe.topHeight + PIPE.gap)
           ) {
             handleGameOver();
           }
@@ -675,25 +656,14 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
       }
       
       if (!gameOver) {
-        if (isMobile) {
-          loopHandle = requestAnimationFrame(gameLoop);
-        } else {
         gameLoopRef.current = requestAnimationFrame(gameLoop);
-        }
       }
     };
-    if (isMobile) {
-      loopHandle = requestAnimationFrame(gameLoop);
-    } else {
     gameLoopRef.current = requestAnimationFrame(gameLoop);
-    }
     return () => {
       window.removeEventListener('resize', updateCanvasSize);
       if (gameLoopRef.current) {
         cancelAnimationFrame(gameLoopRef.current);
-      }
-      if (loopHandle) {
-        cancelAnimationFrame(loopHandle);
       }
     };
   }, [gameStarted, gameOver, score, bgImageLoaded, birdImageLoaded, handleGameOver, isMenuOpen]);
@@ -745,7 +715,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
   
   useEffect(() => {
     loadImages();
-  }, [backgroundImage, birdImageSrc, birdState]);
+  }, [backgroundImage, birdImageSrc]);
   
   useEffect(() => {
     console.log('backgroundImage updated:', backgroundImage);
@@ -832,19 +802,19 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
         className="w-full h-full flex items-center justify-center relative"
         onClick={handleInteraction}
         onTouchStart={(e) => e.preventDefault()}
-        style={{ touchAction: 'none' }}
       >
         {/* Mute button */}
         <button 
-          className="absolute top-4 left-4 z-10 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+          className={`fixed top-4 left-4 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 ${isMobile ? 'w-16 h-16 p-4 text-3xl' : 'w-12 h-12 p-3 text-xl'}`}
           onClick={toggleMute}
+          style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
         >
-          {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+          {isMuted ? <VolumeX size={isMobile ? 40 : 24} /> : <Volume2 size={isMobile ? 40 : 24} />}
         </button>
         
-        {/* Hamburger/Menu Button: Larger and always accessible on mobile */}
+        {/* Hamburger/Menu Button: Same size as mute button */}
         <button 
-          className={`fixed top-4 right-4 z-[1000] bg-black/70 text-white p-3 rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 ${isMobile ? 'w-16 h-16 text-3xl' : ''}`}
+          className={`fixed top-4 right-4 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 ${isMobile ? 'w-16 h-16 p-4 text-3xl' : 'w-12 h-12 p-3 text-xl'}`}
           style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
           aria-label="Open customization menu"
           onClick={(e) => {
@@ -886,7 +856,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
         <canvas 
           ref={canvasRef} 
           className="w-full h-full cursor-pointer pixel-rendering"
-          style={{ zIndex: 1, pointerEvents: 'none', willChange: 'transform' }}
+          style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: 1, willChange: 'transform', touchAction: 'none', pointerEvents: 'none' }}
         />
       </div>
       
