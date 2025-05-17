@@ -860,7 +860,7 @@
           
           <canvas 
             ref={canvasRef} 
-            className="w-full h-full cursor-pointer pixel-rendering"
+            className={`w-full h-full cursor-pointer${!isMobile ? ' pixel-rendering' : ''}`}
             style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: 1, willChange: 'transform', touchAction: 'none', pointerEvents: 'none' }}
           />
         </div>
