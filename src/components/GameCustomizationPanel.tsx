@@ -55,14 +55,14 @@ const GameCustomizationPanel: React.FC<GameCustomizationPanelProps> = ({
         // Convert uploadedImage (data URL) to File
         const imageFile = dataURLtoFile(uploadedImage, 'uploaded.png');
         formData.append('image', imageFile);
-        // DALL-E 2 requires a mask, but if you want to edit the whole image, use a white mask
-        // We'll create a white PNG mask of the same size
+        // DALL-E 2 requires a mask, but if you want to edit the whole image, use a fully transparent mask
+        // We'll create a fully transparent PNG mask of the same size
         const maskCanvas = document.createElement('canvas');
         maskCanvas.width = 1024;
         maskCanvas.height = 1024;
         const ctx = maskCanvas.getContext('2d');
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, 1024, 1024);
+        // Fill with fully transparent pixels
+        ctx.clearRect(0, 0, 1024, 1024);
         const maskDataUrl = maskCanvas.toDataURL('image/png');
         const maskFile = dataURLtoFile(maskDataUrl, 'mask.png');
         formData.append('mask', maskFile);
