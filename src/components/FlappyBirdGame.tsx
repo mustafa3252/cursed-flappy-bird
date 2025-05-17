@@ -845,6 +845,7 @@
                   onClick={async () => {
                     await signOut();
                     setIsMenuOpen(false);
+                    window.location.assign('/');
                   }}
                 >
                   Logout
