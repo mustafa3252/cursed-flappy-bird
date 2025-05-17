@@ -216,9 +216,9 @@
     
     // Mobile scaling and physics adjustments
     // Lower the mobile canvas resolution for performance
-    const MOBILE_CANVAS_WIDTH = 1080;
-    const MOBILE_CANVAS_HEIGHT = 1920;
-    const MOBILE_SCALE = isMobile ? 0.42 : 1; // 240/570 ≈ 0.42
+    const MOBILE_CANVAS_WIDTH = 360;
+    const MOBILE_CANVAS_HEIGHT = 540;
+    const MOBILE_SCALE = isMobile ? 0.63 : 1; // 360/570 ≈ 0.63
     const MOBILE_BIRD = {
       width: 60 * MOBILE_SCALE,
       height: 45 * MOBILE_SCALE,
