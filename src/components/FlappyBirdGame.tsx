@@ -121,16 +121,16 @@
     
     // Image preloading and initial setup
     useEffect(() => {
-      if (!isLoggedIn) return;
       loadImages();
       console.log('Loading images:', {
         bird: birdImg,
         birdUp: birdUpImg,
         birdDead: birdDeadImg
       });
+      
       // Initialize mute state
       setIsMuted(soundManager.getMuteState());
-    }, [backgroundImage, birdImageSrc, isLoggedIn]);
+    }, [backgroundImage, birdImageSrc]);
     
     const pipesRef = useRef<Array<{
       x: number, 
@@ -343,17 +343,16 @@
     
     // Update event listeners
     useEffect(() => {
-      if (!isLoggedIn) return;
       window.addEventListener('keydown', handleKeyDown);
       window.addEventListener('touchstart', handleTouchStart, { passive: false });
+      
       return () => {
         window.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('touchstart', handleTouchStart);
       };
-    }, [handleKeyDown, handleTouchStart, isLoggedIn]);
+    }, [handleKeyDown, handleTouchStart]);
     
     useEffect(() => {
-      if (!isLoggedIn) return;
       if (!bgImageLoaded || !birdImageLoaded) {
         console.log('Game loop waiting for:', {
           bgImageLoaded,
@@ -668,72 +667,64 @@
           cancelAnimationFrame(gameLoopRef.current);
         }
       };
-    }, [gameStarted, gameOver, score, bgImageLoaded, birdImageLoaded, handleGameOver, isMenuOpen, isLoggedIn]);
+    }, [gameStarted, gameOver, score, bgImageLoaded, birdImageLoaded, handleGameOver, isMenuOpen]);
     
     // Update game over effect to set dead state
     useEffect(() => {
-      if (!isLoggedIn) return;
       if (gameOver) {
         setBirdState('dead');
         if (birdStateTimeoutRef.current) {
           window.clearTimeout(birdStateTimeoutRef.current);
         }
       }
-    }, [gameOver, isLoggedIn]);
+    }, [gameOver]);
     
     // Clean up timeout on unmount
     useEffect(() => {
-      if (!isLoggedIn) return;
       return () => {
         if (birdStateTimeoutRef.current) {
           window.clearTimeout(birdStateTimeoutRef.current);
         }
       };
-    }, [isLoggedIn]);
+    }, []);
     
     // Update difficulty based on score
     useEffect(() => {
-      if (!isLoggedIn) return;
       if (gameStarted && !gameOver) {
         const newDifficulty = Math.min(3, 1 + Math.floor(score / 10));
         difficultyRef.current = newDifficulty;
         setDifficulty(newDifficulty);
       }
-    }, [score, gameStarted, gameOver, isLoggedIn]);
+    }, [score, gameStarted, gameOver]);
     
     // Load high score on mount
     useEffect(() => {
-      if (!isLoggedIn) return;
       const savedHighScore = localStorage.getItem('flappyBirdHighScore');
       if (savedHighScore) {
         setHighScore(parseInt(savedHighScore, 10));
       }
-    }, [isLoggedIn]);
+    }, []);
     
     // Add effect to handle background music based on game state and menu
     useEffect(() => {
-      if (!isLoggedIn) return;
       if (gameStarted || isMenuOpen) {
         soundManager.stopBackgroundMusic();
       } else {
         soundManager.startBackgroundMusic();
       }
-    }, [gameStarted, isMenuOpen, isLoggedIn]);
+    }, [gameStarted, isMenuOpen]);
     
     useEffect(() => {
-      if (!isLoggedIn) return;
       loadImages();
-    }, [backgroundImage, birdImageSrc, isLoggedIn]);
+    }, [backgroundImage, birdImageSrc]);
     
     useEffect(() => {
-      if (!isLoggedIn) return;
       console.log('backgroundImage updated:', backgroundImage);
-    }, [backgroundImage, isLoggedIn]);
+    }, [backgroundImage]);
     
     useEffect(() => {
-      if (!isLoggedIn) return;
       console.log('birdImageSrc updated:', birdImageSrc);
-    }, [birdImageSrc, isLoggedIn]);
+    }, [birdImageSrc]);
     
     console.log('Pipes array:', pipesRef.current);
     
@@ -741,13 +732,11 @@
     const { isLoggedIn, signOut } = useBedrockPassport();
     
     return (
-      <div className="flex flex-col items-center justify-center w-full h-full">
-        {!isLoggedIn ? (
-          // Login overlay only
-          <div
-            className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90"
-            style={{backdropFilter: 'blur(4px)', pointerEvents: 'auto', touchAction: 'auto'}}>
-            <div className="bg-black/90 rounded-2xl border-2 border-orange-500 p-6 max-w-[480px] w-full flex flex-col items-center">
+      <>
+        {/* OrangeID login overlay OUTSIDE the game container */}
+        {!isLoggedIn && (
+          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90" style={{backdropFilter: 'blur(4px)', pointerEvents: 'auto'}}>
+            <div className="bg-black/90 rounded-2xl border-2 border-orange-500 p-6 max-w-[480px] w-full flex flex-col items-center" style={{pointerEvents: 'auto'}}>
               <img
                 src="https://irp.cdn-website.com/e81c109a/dms3rep/multi/orange-web3-logo-v2a-20241018.svg"
                 alt="Orange Web3"
@@ -778,104 +767,81 @@
               />
             </div>
           </div>
-        ) : (
-          // Game container and UI
-          <div
-            className="w-full h-full flex items-center justify-center relative"
-            onClick={handleInteraction}
-            {...(isLoggedIn ? {
-              onTouchStart: (e: React.TouchEvent) => {
-                const target = e.target as HTMLElement;
-                if (
-                  target.closest('button, [role="button"], a, input, select, textarea, [tabindex]:not([tabindex="-1"])')
-                ) return;
-                e.preventDefault();
-                handleInteraction();
-              }
-            } : {})}
+        )}
+        <div 
+          className="w-full h-full flex items-center justify-center relative"
+          onClick={handleInteraction}
+          {...(isLoggedIn ? {
+            onTouchStart: (e: React.TouchEvent) => {
+              const target = e.target as HTMLElement;
+              if (
+                target.closest('button, [role="button"], a, input, select, textarea, [tabindex]:not([tabindex="-1"])')
+              ) return;
+              e.preventDefault();      // block scrolling/zoom
+              handleInteraction();     // start/jump
+            },
+            style: { touchAction: 'none' as const }
+          } : { style: {} })}
+        >
+          {/* Mute button */}
+          <button 
+            className={`fixed top-2 left-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center ${isMobile ? 'w-10 h-10 p-2 text-lg' : 'w-12 h-12 p-3 text-xl'}`}
+            onClick={toggleMute}
+            onTouchStart={e => e.stopPropagation()}
+            style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
           >
-            {/* Mute button */}
-            <button 
-              className={`fixed top-2 left-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center ${isMobile ? 'w-10 h-10 p-2 text-lg' : 'w-12 h-12 p-3 text-xl'}`}
-              onClick={toggleMute}
-              onTouchStart={e => e.stopPropagation()}
-              style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
-            >
-              {isMuted ? <VolumeX size={isMobile ? 20 : 24} /> : <Volume2 size={isMobile ? 20 : 24} />}
-            </button>
-            
-            {/* Customization Button: replaces hamburger/menu icon */}
-            <button 
-              className={`fixed top-2 right-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center font-bold ${isMobile ? 'w-auto h-10 px-4 py-2 text-base' : 'w-auto h-12 px-6 py-3 text-lg'}`}
-              style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
-              aria-label="Open customization menu"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsMenuOpen(true);
-              }}
-              onTouchStart={e => e.stopPropagation()}
-            >
-              Change with AI
-            </button>
-            
-            {/* Customization menu */}
-            <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-              <SheetContent className="w-[90vw] max-w-[540px] bg-black/90 border-orange-500 z-[1002] flex flex-col h-full">
-                <SheetHeader>
-                  <SheetTitle className="text-orange-500 text-xl pixel-font">Game Customization</SheetTitle>
-                </SheetHeader>
-                <div className="flex-1 overflow-y-auto">
-                  <GameCustomizationPanel
-                    onUpdateBackground={setBackgroundImage}
-                    onUpdateBird={setBirdImageSrc}
-                    currentBackground={backgroundImage}
-                    currentBird={birdImageSrc}
-                  />
-                </div>
-                {isLoggedIn && (
-                  <Button
-                    className="mt-6 mb-2 w-full text-lg font-bold pixel-font bg-white text-black border border-gray-300 hover:bg-gray-100 hover:text-black"
-                    onClick={async () => {
-                      await signOut();
-                      setIsMenuOpen(false);
-                      window.location.assign('/');
-                    }}
-                  >
-                    Logout
-                  </Button>
-                )}
-              </SheetContent>
-            </Sheet>
-            
-            <canvas 
-              ref={canvasRef} 
-              className={`w-full h-full cursor-pointer${!isMobile ? ' pixel-rendering' : ''}`}
-              style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: 1, willChange: 'transform', touchAction: 'none', pointerEvents: 'none' }}
-            />
-          </div>
-        )}
-        
-        {!gameStarted && !gameOver && (
-          <div className="text-center z-10 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-            <p className={`font-bold text-white pixel-font mb-4 ${isMobile ? 'text-lg' : 'text-2xl'}`}> 
-              HIGH SCORE: {highScore}
-            </p>
-            <p className={`font-bold text-white pixel-font animate-flash ${isMobile ? 'text-2xl' : 'text-4xl'}`}>
-              TOUCH OR PRESS SPACEBAR TO START
-            </p>
-          </div>
-        )}
-        
-        {gameOver && (
-          <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-            <div className="text-center bg-black/90 p-8 rounded-lg border-2 border-white pointer-events-auto">
-              <p className={`font-bold text-red-500 pixel-font mb-4 ${isMobile ? 'text-2xl' : 'text-4xl'}`}>GAME OVER</p>
-              <p className={`font-bold text-white pixel-font mb-2 ${isMobile ? 'text-lg' : 'text-2xl'}`}>SCORE: {score}</p>
-              <p className={`font-bold text-orange-500 pixel-font mb-8 ${isMobile ? 'text-base' : 'text-xl'}`}>HIGH SCORE: {highScore}</p>
-              <p className={`font-bold text-white pixel-font animate-flash ${isMobile ? 'text-lg' : 'text-xl'}`}>TOUCH OR PRESS SPACEBAR TO RETRY</p>
-            </div>
-          </div>
-        )}
+            {isMuted ? <VolumeX size={isMobile ? 20 : 24} /> : <Volume2 size={isMobile ? 20 : 24} />}
+          </button>
+          
+          {/* Customization Button: replaces hamburger/menu icon */}
+          <button 
+            className={`fixed top-2 right-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center font-bold ${isMobile ? 'w-auto h-10 px-4 py-2 text-base' : 'w-auto h-12 px-6 py-3 text-lg'}`}
+            style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
+            aria-label="Open customization menu"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsMenuOpen(true);
+            }}
+            onTouchStart={e => e.stopPropagation()}
+          >
+            Change with AI
+          </button>
+          
+          {/* Customization menu */}
+          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+            <SheetContent className="w-[90vw] max-w-[540px] bg-black/90 border-orange-500 z-[1002] flex flex-col h-full">
+              <SheetHeader>
+                <SheetTitle className="text-orange-500 text-xl pixel-font">Game Customization</SheetTitle>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto">
+                <GameCustomizationPanel
+                  onUpdateBackground={setBackgroundImage}
+                  onUpdateBird={setBirdImageSrc}
+                  currentBackground={backgroundImage}
+                  currentBird={birdImageSrc}
+                />
+              </div>
+              {isLoggedIn && (
+                <Button
+                  className="mt-6 mb-2 w-full text-lg font-bold pixel-font bg-white text-black border border-gray-300 hover:bg-gray-100 hover:text-black"
+                  onClick={async () => {
+                    await signOut();
+                    setIsMenuOpen(false);
+                    window.location.assign('/');
+                  }}
+                >
+                  Logout
+                </Button>
+              )}
+            </SheetContent>
+          </Sheet>
+          
+          <canvas 
+            ref={canvasRef} 
+            className={`w-full h-full cursor-pointer${!isMobile ? ' pixel-rendering' : ''}`}
+            style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: 1, willChange: 'transform', touchAction: 'none', pointerEvents: 'none' }}
+          />
+        </div>
         
         <style>
           {`
@@ -902,7 +868,7 @@
           }
           `}
         </style>
-      </div>
+      </>
     );
   };
 
