@@ -729,8 +729,7 @@
     console.log('Pipes array:', pipesRef.current);
     
     // DEV: Bypass OrangeID login for now
-    const isLoggedIn = true;
-    const { signOut } = useBedrockPassport();
+    const { isLoggedIn, signOut } = useBedrockPassport();
     
     return (
       <div className="flex flex-col items-center justify-center w-full h-full">
