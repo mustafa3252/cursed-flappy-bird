@@ -121,16 +121,16 @@
     
     // Image preloading and initial setup
     useEffect(() => {
+      if (!isLoggedIn) return;
       loadImages();
       console.log('Loading images:', {
         bird: birdImg,
         birdUp: birdUpImg,
         birdDead: birdDeadImg
       });
-      
       // Initialize mute state
       setIsMuted(soundManager.getMuteState());
-    }, [backgroundImage, birdImageSrc]);
+    }, [backgroundImage, birdImageSrc, isLoggedIn]);
     
     const pipesRef = useRef<Array<{
       x: number, 
@@ -343,16 +343,17 @@
     
     // Update event listeners
     useEffect(() => {
+      if (!isLoggedIn) return;
       window.addEventListener('keydown', handleKeyDown);
       window.addEventListener('touchstart', handleTouchStart, { passive: false });
-      
       return () => {
         window.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('touchstart', handleTouchStart);
       };
-    }, [handleKeyDown, handleTouchStart]);
+    }, [handleKeyDown, handleTouchStart, isLoggedIn]);
     
     useEffect(() => {
+      if (!isLoggedIn) return;
       if (!bgImageLoaded || !birdImageLoaded) {
         console.log('Game loop waiting for:', {
           bgImageLoaded,
@@ -667,64 +668,72 @@
           cancelAnimationFrame(gameLoopRef.current);
         }
       };
-    }, [gameStarted, gameOver, score, bgImageLoaded, birdImageLoaded, handleGameOver, isMenuOpen]);
+    }, [gameStarted, gameOver, score, bgImageLoaded, birdImageLoaded, handleGameOver, isMenuOpen, isLoggedIn]);
     
     // Update game over effect to set dead state
     useEffect(() => {
+      if (!isLoggedIn) return;
       if (gameOver) {
         setBirdState('dead');
         if (birdStateTimeoutRef.current) {
           window.clearTimeout(birdStateTimeoutRef.current);
         }
       }
-    }, [gameOver]);
+    }, [gameOver, isLoggedIn]);
     
     // Clean up timeout on unmount
     useEffect(() => {
+      if (!isLoggedIn) return;
       return () => {
         if (birdStateTimeoutRef.current) {
           window.clearTimeout(birdStateTimeoutRef.current);
         }
       };
-    }, []);
+    }, [isLoggedIn]);
     
     // Update difficulty based on score
     useEffect(() => {
+      if (!isLoggedIn) return;
       if (gameStarted && !gameOver) {
         const newDifficulty = Math.min(3, 1 + Math.floor(score / 10));
         difficultyRef.current = newDifficulty;
         setDifficulty(newDifficulty);
       }
-    }, [score, gameStarted, gameOver]);
+    }, [score, gameStarted, gameOver, isLoggedIn]);
     
     // Load high score on mount
     useEffect(() => {
+      if (!isLoggedIn) return;
       const savedHighScore = localStorage.getItem('flappyBirdHighScore');
       if (savedHighScore) {
         setHighScore(parseInt(savedHighScore, 10));
       }
-    }, []);
+    }, [isLoggedIn]);
     
     // Add effect to handle background music based on game state and menu
     useEffect(() => {
+      if (!isLoggedIn) return;
       if (gameStarted || isMenuOpen) {
         soundManager.stopBackgroundMusic();
       } else {
         soundManager.startBackgroundMusic();
       }
-    }, [gameStarted, isMenuOpen]);
+    }, [gameStarted, isMenuOpen, isLoggedIn]);
     
     useEffect(() => {
+      if (!isLoggedIn) return;
       loadImages();
-    }, [backgroundImage, birdImageSrc]);
+    }, [backgroundImage, birdImageSrc, isLoggedIn]);
     
     useEffect(() => {
+      if (!isLoggedIn) return;
       console.log('backgroundImage updated:', backgroundImage);
-    }, [backgroundImage]);
+    }, [backgroundImage, isLoggedIn]);
     
     useEffect(() => {
+      if (!isLoggedIn) return;
       console.log('birdImageSrc updated:', birdImageSrc);
-    }, [birdImageSrc]);
+    }, [birdImageSrc, isLoggedIn]);
     
     console.log('Pipes array:', pipesRef.current);
     
