@@ -794,8 +794,11 @@
           className="w-full h-full flex items-center justify-center relative"
           onClick={handleInteraction}
           onTouchStart={e => {
-            // If the user touched a <button> (or anything inside it), bail out:
-            if ((e.target as HTMLElement).closest('button')) return;
+            // If the user touched any interactive element, bail out:
+            const target = e.target as HTMLElement;
+            if (
+              target.closest('button, [role="button"], a, input, select, textarea, [tabindex]:not([tabindex="-1"])')
+            ) return;
             e.preventDefault();      // block scrolling/zoom
             handleInteraction();     // start/jump
           }}
