@@ -216,8 +216,8 @@
     
     // Mobile scaling and physics adjustments
     // Lower the mobile canvas resolution for performance
-    const MOBILE_CANVAS_WIDTH = 240;
-    const MOBILE_CANVAS_HEIGHT = 360;
+    const MOBILE_CANVAS_WIDTH = 1080;
+    const MOBILE_CANVAS_HEIGHT = 1920;
     const MOBILE_SCALE = isMobile ? 0.42 : 1; // 240/570 ≈ 0.42
     const MOBILE_BIRD = {
       width: 60 * MOBILE_SCALE,
@@ -373,18 +373,12 @@
       const updateCanvasSize = () => {
         if (canvas) {
           if (isMobile) {
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = MOBILE_CANVAS_WIDTH * dpr;
-            canvas.height = MOBILE_CANVAS_HEIGHT * dpr;
-            canvas.style.width = `${MOBILE_CANVAS_WIDTH}px`;
-            canvas.style.height = `${MOBILE_CANVAS_HEIGHT}px`;
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            // Use a much smaller, fixed aspect ratio for mobile
+            canvas.width = MOBILE_CANVAS_WIDTH;
+            canvas.height = MOBILE_CANVAS_HEIGHT;
           } else {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            canvas.style.width = '100%';
-            canvas.style.height = '100%';
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
           }
         }
       };
