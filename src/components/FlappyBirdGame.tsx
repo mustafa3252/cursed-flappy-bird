@@ -369,21 +369,16 @@
       // Define groundHeight here so it's available throughout the effect
       const groundHeight = 20;
       
-      // Make canvas fill the container, but smaller on mobile, and use devicePixelRatio for sharpness
+      // Make canvas fill the container and always fill the window, using devicePixelRatio for sharpness
       const updateCanvasSize = () => {
         if (canvas) {
           const dpr = window.devicePixelRatio || 1;
-          if (isMobile) {
-            canvas.width = MOBILE_CANVAS_WIDTH * dpr;
-            canvas.height = MOBILE_CANVAS_HEIGHT * dpr;
-            canvas.style.width = `${MOBILE_CANVAS_WIDTH}px`;
-            canvas.style.height = `${MOBILE_CANVAS_HEIGHT}px`;
-          } else {
-            canvas.width = window.innerWidth * dpr;
-            canvas.height = window.innerHeight * dpr;
-            canvas.style.width = `${window.innerWidth}px`;
-            canvas.style.height = `${window.innerHeight}px`;
-          }
+          const cssWidth = window.innerWidth;
+          const cssHeight = window.innerHeight;
+          canvas.width = cssWidth * dpr;
+          canvas.height = cssHeight * dpr;
+          canvas.style.width = `${cssWidth}px`;
+          canvas.style.height = `${cssHeight}px`;
           ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset any existing transforms
           ctx.scale(dpr, dpr);
         }
