@@ -735,7 +735,9 @@
       <div className="flex flex-col items-center justify-center w-full h-full">
         {!isLoggedIn ? (
           // Login overlay only
-          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90" style={{backdropFilter: 'blur(4px)'}}>
+          <div
+            className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90"
+            style={{backdropFilter: 'blur(4px)', pointerEvents: 'auto', touchAction: 'auto'}}>
             <div className="bg-black/90 rounded-2xl border-2 border-orange-500 p-6 max-w-[480px] w-full flex flex-col items-center">
               <img
                 src="https://irp.cdn-website.com/e81c109a/dms3rep/multi/orange-web3-logo-v2a-20241018.svg"
