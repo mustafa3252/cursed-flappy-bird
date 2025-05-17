@@ -432,13 +432,7 @@
         
         // Only update bird position and generate pipes if game is started and menu is not open
         if (gameStarted && !gameOver && !isMenuOpen) {
-          // Floaty start for mobile: ramp up gravity over 1 second
-          let gravity = birdRef.current.gravity;
-          if (isMobile && startTimeRef.current && timestamp) {
-            const elapsed = Math.min(1, (timestamp - startTimeRef.current) / 1000); // 0 to 1
-            gravity = birdRef.current.gravity * elapsed;
-          }
-          birdRef.current.velocity += gravity;
+          birdRef.current.velocity += birdRef.current.gravity;
           birdRef.current.y += birdRef.current.velocity;
           
           // Generate pipes with difficulty-based parameters
