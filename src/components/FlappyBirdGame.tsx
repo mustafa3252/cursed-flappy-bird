@@ -733,8 +733,8 @@
     
     return (
       <div className="flex flex-col items-center justify-center w-full h-full">
-        {/* OrangeID login overlay */}
-        {!isLoggedIn && (
+        {!isLoggedIn ? (
+          // Login overlay only
           <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90" style={{backdropFilter: 'blur(4px)'}}>
             <div className="bg-black/90 rounded-2xl border-2 border-orange-500 p-6 max-w-[480px] w-full flex flex-col items-center">
               <img
@@ -767,7 +767,83 @@
               />
             </div>
           </div>
+        ) : (
+          // Game container and UI
+          <div
+            className="w-full h-full flex items-center justify-center relative"
+            onClick={handleInteraction}
+            {...(isLoggedIn ? {
+              onTouchStart: (e: React.TouchEvent) => {
+                const target = e.target as HTMLElement;
+                if (
+                  target.closest('button, [role="button"], a, input, select, textarea, [tabindex]:not([tabindex="-1"])')
+                ) return;
+                e.preventDefault();
+                handleInteraction();
+              }
+            } : {})}
+          >
+            {/* Mute button */}
+            <button 
+              className={`fixed top-2 left-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center ${isMobile ? 'w-10 h-10 p-2 text-lg' : 'w-12 h-12 p-3 text-xl'}`}
+              onClick={toggleMute}
+              onTouchStart={e => e.stopPropagation()}
+              style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
+            >
+              {isMuted ? <VolumeX size={isMobile ? 20 : 24} /> : <Volume2 size={isMobile ? 20 : 24} />}
+            </button>
+            
+            {/* Customization Button: replaces hamburger/menu icon */}
+            <button 
+              className={`fixed top-2 right-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center font-bold ${isMobile ? 'w-auto h-10 px-4 py-2 text-base' : 'w-auto h-12 px-6 py-3 text-lg'}`}
+              style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
+              aria-label="Open customization menu"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMenuOpen(true);
+              }}
+              onTouchStart={e => e.stopPropagation()}
+            >
+              Change with AI
+            </button>
+            
+            {/* Customization menu */}
+            <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+              <SheetContent className="w-[90vw] max-w-[540px] bg-black/90 border-orange-500 z-[1002] flex flex-col h-full">
+                <SheetHeader>
+                  <SheetTitle className="text-orange-500 text-xl pixel-font">Game Customization</SheetTitle>
+                </SheetHeader>
+                <div className="flex-1 overflow-y-auto">
+                  <GameCustomizationPanel
+                    onUpdateBackground={setBackgroundImage}
+                    onUpdateBird={setBirdImageSrc}
+                    currentBackground={backgroundImage}
+                    currentBird={birdImageSrc}
+                  />
+                </div>
+                {isLoggedIn && (
+                  <Button
+                    className="mt-6 mb-2 w-full text-lg font-bold pixel-font bg-white text-black border border-gray-300 hover:bg-gray-100 hover:text-black"
+                    onClick={async () => {
+                      await signOut();
+                      setIsMenuOpen(false);
+                      window.location.assign('/');
+                    }}
+                  >
+                    Logout
+                  </Button>
+                )}
+              </SheetContent>
+            </Sheet>
+            
+            <canvas 
+              ref={canvasRef} 
+              className={`w-full h-full cursor-pointer${!isMobile ? ' pixel-rendering' : ''}`}
+              style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: 1, willChange: 'transform', touchAction: 'none', pointerEvents: 'none' }}
+            />
+          </div>
         )}
+        
         {!gameStarted && !gameOver && (
           <div className="text-center z-10 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <p className={`font-bold text-white pixel-font mb-4 ${isMobile ? 'text-lg' : 'text-2xl'}`}> 
@@ -789,81 +865,6 @@
             </div>
           </div>
         )}
-        
-        <div 
-          className="w-full h-full flex items-center justify-center relative"
-          onClick={handleInteraction}
-          {...(isLoggedIn ? {
-            onTouchStart: (e: React.TouchEvent) => {
-              // If the user touched any interactive element, bail out:
-              const target = e.target as HTMLElement;
-              if (
-                target.closest('button, [role="button"], a, input, select, textarea, [tabindex]:not([tabindex="-1"])')
-              ) return;
-              e.preventDefault();      // block scrolling/zoom
-              handleInteraction();     // start/jump
-            }
-          } : {})}
-        >
-          {/* Mute button */}
-          <button 
-            className={`fixed top-2 left-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center ${isMobile ? 'w-10 h-10 p-2 text-lg' : 'w-12 h-12 p-3 text-xl'}`}
-            onClick={toggleMute}
-            onTouchStart={e => e.stopPropagation()}
-            style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
-          >
-            {isMuted ? <VolumeX size={isMobile ? 20 : 24} /> : <Volume2 size={isMobile ? 20 : 24} />}
-          </button>
-          
-          {/* Customization Button: replaces hamburger/menu icon */}
-          <button 
-            className={`fixed top-2 right-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center font-bold ${isMobile ? 'w-auto h-10 px-4 py-2 text-base' : 'w-auto h-12 px-6 py-3 text-lg'}`}
-            style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
-            aria-label="Open customization menu"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsMenuOpen(true);
-            }}
-            onTouchStart={e => e.stopPropagation()}
-          >
-            Change with AI
-          </button>
-          
-          {/* Customization menu */}
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <SheetContent className="w-[90vw] max-w-[540px] bg-black/90 border-orange-500 z-[1002] flex flex-col h-full">
-              <SheetHeader>
-                <SheetTitle className="text-orange-500 text-xl pixel-font">Game Customization</SheetTitle>
-              </SheetHeader>
-              <div className="flex-1 overflow-y-auto">
-                <GameCustomizationPanel
-                  onUpdateBackground={setBackgroundImage}
-                  onUpdateBird={setBirdImageSrc}
-                  currentBackground={backgroundImage}
-                  currentBird={birdImageSrc}
-                />
-              </div>
-              {isLoggedIn && (
-                <Button
-                  className="mt-6 mb-2 w-full text-lg font-bold pixel-font bg-white text-black border border-gray-300 hover:bg-gray-100 hover:text-black"
-                  onClick={async () => {
-                    await signOut();
-                    setIsMenuOpen(false);
-                    window.location.assign('/');
-                  }}
-                >
-                  Logout
-                </Button>
-              )}
-            </SheetContent>
-          </Sheet>
-          
-          <canvas 
-            ref={canvasRef} 
-            className={`w-full h-full cursor-pointer${!isMobile ? ' pixel-rendering' : ''}`}
-            style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: 1, willChange: 'transform', touchAction: 'none', pointerEvents: 'none' }}
-          />
-        </div>
         
         <style>
           {`
