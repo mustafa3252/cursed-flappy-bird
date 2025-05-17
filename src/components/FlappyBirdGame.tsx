@@ -262,6 +262,33 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
     setIsMenuOpen(false); // Ensure menu is closed when game starts
     frameCountRef.current = 0; // Reset frame count
     console.log('Game started!');
+
+    // Preload pipes for desktop only
+    if (!isMobile) {
+      const preloadCount = 5;
+      const pipeSpacing = 140; // match desktop pipeInterval
+      const groundHeight = 20;
+      for (let i = 0; i < preloadCount; i++) {
+        // Calculate random pipe height
+        const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
+        const minPipeHeight = PIPE.minPipeHeight;
+        const maxPipeHeight = window.innerHeight - groundHeight - pipeGap - minPipeHeight;
+        const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
+        const width = Math.floor(Math.random() * (PIPE.maxWidth - PIPE.minWidth)) + PIPE.minWidth;
+        // Use the same gradient logic as in the game loop
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext('2d');
+        const gradient = ctx ? createPipeGradient(ctx, width) : undefined;
+        pipesRef.current.push({
+          x: window.innerWidth + i * pipeSpacing,
+          topHeight,
+          passed: false,
+          width,
+          gradient,
+          speed: 3 + (difficultyRef.current - 1)
+        });
+      }
+    }
   }, [isMobile]);
   
   // Separate function to handle game over
@@ -445,7 +472,7 @@ const FlappyBirdGame: React.FC<GameProps> = ({ onExit }) => {
           // No gradients on mobile
           const gradient = isMobile ? undefined : createPipeGradient(ctx, width);
           pipesRef.current.push({
-            x: isMobile ? canvas.width : canvas.width - 120,
+            x: isMobile ? canvas.width : canvas.width - 150,
             topHeight,
             passed: false,
             width,
