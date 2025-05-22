@@ -432,7 +432,13 @@
         
         // Only update bird position and generate pipes if game is started and menu is not open
         if (gameStarted && !gameOver && !isMenuOpen) {
-          birdRef.current.velocity += birdRef.current.gravity;
+          // Floaty start for mobile: ramp up gravity over 1 second
+          let gravity = birdRef.current.gravity;
+          if (isMobile && startTimeRef.current && timestamp) {
+            const elapsed = Math.min(1, (timestamp - startTimeRef.current) / 1000); // 0 to 1
+            gravity = birdRef.current.gravity * elapsed;
+          }
+          birdRef.current.velocity += gravity;
           birdRef.current.y += birdRef.current.velocity;
           
           // Generate pipes with difficulty-based parameters
@@ -794,6 +800,19 @@
             style: { touchAction: 'none' as const }
           } : { style: {} })}
         >
+          {/* Game End Screen Overlay */}
+          {isLoggedIn && !isMenuOpen && gameOver && (
+            <div className="absolute inset-0 z-[1100] flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm select-none">
+              <div className="bg-black/80 rounded-2xl border-2 border-orange-500 p-8 flex flex-col items-center shadow-2xl">
+                <h2 className="text-3xl font-bold text-orange-400 pixel-font mb-2">Game Over</h2>
+                <div className="text-white text-xl pixel-font mb-2">Score: <span className="text-orange-300">{score}</span></div>
+                <div className="text-white text-lg pixel-font mb-4">High Score: <span className="text-orange-200">{highScore}</span></div>
+                <div className="text-white text-base pixel-font animate-flash mt-2 text-center">
+                  Touch or press <span className="text-orange-400">space bar</span> to start
+                </div>
+              </div>
+            </div>
+          )}
           {/* Mute button */}
           <button 
             className={`fixed top-2 left-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center ${isMobile ? 'w-10 h-10 p-2 text-lg' : 'w-12 h-12 p-3 text-xl'}`}
