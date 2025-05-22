@@ -435,7 +435,7 @@
           // Floaty start: ramp up gravity over 1.2 seconds for all devices, with ease-in curve
           let gravity = birdRef.current.gravity;
           if (startTimeRef.current && timestamp) {
-            const rampDuration = 1; // seconds
+            const rampDuration = 0.2; // seconds
             const elapsed = Math.min(1, (timestamp - startTimeRef.current) / (rampDuration * 1000)); // 0 to 1
             const rampPower = 0.569; // so that (0.2)^p ≈ 0.4
             gravity = birdRef.current.gravity * Math.pow(elapsed, rampPower);
