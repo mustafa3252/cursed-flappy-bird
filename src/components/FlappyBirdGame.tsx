@@ -437,7 +437,8 @@
           if (startTimeRef.current && timestamp) {
             const rampDuration = 1; // seconds
             const elapsed = Math.min(1, (timestamp - startTimeRef.current) / (rampDuration * 1000)); // 0 to 1
-            gravity = birdRef.current.gravity * elapsed; // ease-in
+            const rampPower = 0.569; // so that (0.2)^p ≈ 0.4
+            gravity = birdRef.current.gravity * Math.pow(elapsed, rampPower);
           }
           birdRef.current.velocity += gravity;
           birdRef.current.y += birdRef.current.velocity;
