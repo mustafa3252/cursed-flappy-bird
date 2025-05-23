@@ -432,14 +432,8 @@
         
         // Only update bird position and generate pipes if game is started and menu is not open
         if (gameStarted && !gameOver && !isMenuOpen) {
-          // Floaty start: ramp up gravity over 1.2 seconds for all devices, with ease-in curve
+          // Remove floaty start: always use normal gravity
           let gravity = birdRef.current.gravity;
-          if (startTimeRef.current && timestamp) {
-            const rampDuration = 0.02; // seconds
-            const elapsed = Math.min(1, (timestamp - startTimeRef.current) / (rampDuration * 1000)); // 0 to 1
-            const rampPower = 0.569; // so that (0.2)^p ≈ 0.4
-            gravity = birdRef.current.gravity * Math.pow(elapsed, rampPower);
-          }
           birdRef.current.velocity += gravity;
           birdRef.current.y += birdRef.current.velocity;
           
