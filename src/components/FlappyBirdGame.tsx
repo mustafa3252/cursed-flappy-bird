@@ -266,6 +266,26 @@
       frameCountRef.current = 0; // Reset frame count
       startTimeRef.current = performance.now(); // Track when the game started
       console.log('Game started!');
+      // Immediately spawn a pipe at game start
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const groundHeight = 20;
+        const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
+        const minPipeHeight = PIPE.minPipeHeight;
+        const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
+        const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
+        const width = Math.floor(Math.random() * (PIPE.maxWidth - PIPE.minWidth)) + PIPE.minWidth;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx && !isMobile ? createPipeGradient(ctx, width) : undefined;
+        pipesRef.current.push({
+          x: isMobile ? canvas.width : canvas.width - 150,
+          topHeight,
+          passed: false,
+          width,
+          gradient,
+          speed: (isMobile ? 4.2 : 3) + (difficultyRef.current - 1) * (isMobile ? 0.7 : 1)
+        });
+      }
     }, [isMobile]);
     
     // Separate function to handle game over
@@ -379,11 +399,11 @@
 
       // Pipe spawning based on time
       const pipeIntervalSeconds = (() => {
-        const minPipeInterval = isMobile ? 0.67 : 0.67;
-        const baseInterval = isMobile ? 1.17 : 2.33;
+        const minPipeInterval = isMobile ? 0.4 : 0.4;
+        const baseInterval = isMobile ? 0.8 : 1.2;
         return Math.max(minPipeInterval, baseInterval / difficultyRef.current);
       })();
-      pipeSpawnTimerRef.current += dt * 2;
+      pipeSpawnTimerRef.current += dt;
       if (pipeSpawnTimerRef.current >= pipeIntervalSeconds) {
         const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
         const minPipeHeight = PIPE.minPipeHeight;
