@@ -6,7 +6,7 @@
   import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
   import GameCustomizationPanel from '@/components/GameCustomizationPanel';
   import backgroundImg from '@/assets/background.png';
-  import birdImg from '@/assets/bird.jpg';
+  import birdImg from '@/assets/bird.png';
   import birdUpImg from '@/assets/birdUp.png';
   import birdDeadImg from '@/assets/birdDead.png';
   import pipeTopImg from '@/assets/pipeTop.png';
