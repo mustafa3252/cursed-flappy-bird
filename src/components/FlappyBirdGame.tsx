@@ -360,6 +360,91 @@
     const lastTimestampRef = useRef<number | null>(null);
     const pipeSpawnTimerRef = useRef(0); // in seconds
     
+    // Add fixed timestep constants and accumulator
+    const FIXED_TIME_STEP = 1 / 60; // 60Hz
+    const MAX_UPDATES_PER_FRAME = 5;
+    const accumulatorRef = useRef(0);
+
+    // Move all game logic into this function
+    const updateGameLogic = useCallback((dt: number, ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, groundHeight: number) => {
+      // Bird movement
+      let gravity = birdRef.current.gravity;
+      birdRef.current.velocity += gravity * dt;
+      birdRef.current.y += birdRef.current.velocity * dt;
+
+      // Pipe spawning based on time
+      const pipeIntervalSeconds = (() => {
+        const minPipeInterval = isMobile ? 0.67 : 0.67;
+        const baseInterval = isMobile ? 1.17 : 2.33;
+        return Math.max(minPipeInterval, baseInterval / difficultyRef.current);
+      })();
+      pipeSpawnTimerRef.current += dt;
+      if (pipeSpawnTimerRef.current >= pipeIntervalSeconds) {
+        const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
+        const minPipeHeight = PIPE.minPipeHeight;
+        const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
+        const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
+        const width = Math.floor(Math.random() * (PIPE.maxWidth - PIPE.minWidth)) + PIPE.minWidth;
+        const gradient = isMobile ? undefined : createPipeGradient(ctx, width);
+        pipesRef.current.push({
+          x: isMobile ? canvas.width : canvas.width - 150,
+          topHeight,
+          passed: false,
+          width,
+          gradient,
+          speed: (isMobile ? 4.2 : 3) + (difficultyRef.current - 1) * (isMobile ? 0.7 : 1)
+        });
+        pipeSpawnTimerRef.current = 0;
+      }
+
+      // Update particles (skip on mobile)
+      if (!isMobile) {
+        particlesRef.current = particlesRef.current.filter(particle => {
+          particle.x += particle.vx * dt * 60;
+          particle.y += particle.vy * dt * 60;
+          particle.life -= 0.02 * dt * 60;
+          return particle.life > 0;
+        });
+      }
+
+      // Update pipes
+      pipesRef.current = pipesRef.current.filter(pipe => {
+        if (gameStarted && !gameOver) {
+          pipe.x -= (pipe.speed || (3 + (difficultyRef.current - 1))) * dt * 60;
+        }
+        // Scoring
+        if (!pipe.passed && pipe.x + pipe.width < birdRef.current.x) {
+          pipe.passed = true;
+          setScore(prevScore => prevScore + 1);
+          soundManager.play('score');
+        }
+        // Collision
+        if (
+          birdRef.current.x + birdRef.current.width > pipe.x &&
+          birdRef.current.x < pipe.x + pipe.width &&
+          (birdRef.current.y < pipe.topHeight || 
+            birdRef.current.y + birdRef.current.height > pipe.topHeight + PIPE.gap)
+        ) {
+          handleGameOver();
+        }
+        return pipe.x > -pipe.width;
+      });
+
+      // Update cloud puffs (skip on mobile)
+      if (!isMobile) {
+        cloudPuffsRef.current = cloudPuffsRef.current.filter(puff => {
+          puff.size += puff.expandSpeed * dt * 60;
+          puff.opacity -= puff.fadeSpeed * dt * 60;
+          return puff.opacity > 0;
+        });
+      }
+
+      // Ground collision
+      if (birdRef.current.y + birdRef.current.height > canvas.height - groundHeight || birdRef.current.y < 0) {
+        handleGameOver();
+      }
+    }, [PIPE, addCloudPuff, createPipeGradient, gameStarted, gameOver, handleGameOver, isMobile]);
+
     useEffect(() => {
       if (!bgImageLoaded || !birdImageLoaded) {
         console.log('Game loop waiting for:', {
@@ -386,23 +471,29 @@
       };
       updateCanvasSize();
       window.addEventListener('resize', updateCanvasSize);
-      let loopHandle: number | null = null;
       // Reset lastTimestamp and pipeSpawnTimer on game start
       lastTimestampRef.current = null;
       pipeSpawnTimerRef.current = 0;
+      accumulatorRef.current = 0;
       const gameLoop = (timestamp?: number) => {
         if (!timestamp) timestamp = performance.now();
         let deltaTime = 0;
         if (lastTimestampRef.current !== null) {
-          deltaTime = (timestamp - lastTimestampRef.current) / 1000; // seconds
+          deltaTime = (timestamp - lastTimestampRef.current) / 1000;
         } else {
-          deltaTime = 1 / 60; // default to 60 FPS for first frame
+          deltaTime = FIXED_TIME_STEP;
         }
-        // Clamp deltaTime to avoid lag spikes
-        const MAX_DELTA = 1 / 20; // 0.05s = 20 FPS minimum
-        if (deltaTime > MAX_DELTA) deltaTime = MAX_DELTA;
         lastTimestampRef.current = timestamp;
-        // Clear canvas and set background
+        accumulatorRef.current += deltaTime;
+        let numUpdates = 0;
+        while (accumulatorRef.current >= FIXED_TIME_STEP && numUpdates < MAX_UPDATES_PER_FRAME) {
+          if (gameStarted && !gameOver && !isMenuOpen) {
+            updateGameLogic(FIXED_TIME_STEP, ctx, canvas, groundHeight);
+          }
+          accumulatorRef.current -= FIXED_TIME_STEP;
+          numUpdates++;
+        }
+        // Render (draw everything based on current state)
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         // Draw background: blurred/dimmed stretched fill, then aspect-ratio-correct cover
@@ -439,67 +530,8 @@
         ctx.fillStyle = '#996633';
         ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
         
-        // Only update bird position and generate pipes if game is started and menu is not open
-        if (gameStarted && !gameOver && !isMenuOpen) {
-          // Remove floaty start: always use normal gravity
-          let gravity = birdRef.current.gravity;
-          birdRef.current.velocity += gravity * deltaTime * 90;
-          birdRef.current.y += birdRef.current.velocity * deltaTime * 90;
-          
-          // Pipe spawning based on time, not frame count
-          // Calculate pipe interval in seconds
-          const pipeIntervalSeconds = (() => {
-            const minPipeInterval = isMobile ? 0.67 : 0.67; // ~40 frames at 60fps
-            const baseInterval = isMobile ? 1.17 : 2.33; // ~70/140 frames at 60fps
-            return Math.max(minPipeInterval, baseInterval / difficultyRef.current);
-          })();
-          pipeSpawnTimerRef.current += deltaTime;
-          if (pipeSpawnTimerRef.current >= pipeIntervalSeconds) {
-            const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
-            const minPipeHeight = PIPE.minPipeHeight;
-            const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
-            const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
-            const width = Math.floor(Math.random() * (PIPE.maxWidth - PIPE.minWidth)) + PIPE.minWidth;
-            const gradient = isMobile ? undefined : createPipeGradient(ctx, width);
-            pipesRef.current.push({
-              x: isMobile ? canvas.width : canvas.width - 150,
-              topHeight,
-              passed: false,
-              width,
-              gradient,
-              speed: (isMobile ? 4.2 : 3) + (difficultyRef.current - 1) * (isMobile ? 0.7 : 1)
-            });
-            console.log('Pipe generated:', pipesRef.current[pipesRef.current.length - 1]);
-            pipeSpawnTimerRef.current = 0;
-          }
-        }
-        
-        // Update and draw particles (skip on mobile)
-        if (!isMobile) {
-          particlesRef.current = particlesRef.current.filter(particle => {
-            particle.x += particle.vx * deltaTime * 90;
-            particle.y += particle.vy * deltaTime * 90;
-            particle.life -= 0.02 * deltaTime * 90;
-            if (particle.life > 0) {
-              ctx.fillStyle = particle.color;
-              ctx.globalAlpha = particle.life;
-              ctx.beginPath();
-              ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.globalAlpha = 1;
-              return true;
-            }
-            return false;
-          });
-        }
-        
-        // Update pipe movement with difficulty
-        pipesRef.current = pipesRef.current.filter(pipe => {
-          if (gameStarted && !gameOver) {
-            pipe.x -= (pipe.speed || (3 + (difficultyRef.current - 1))) * deltaTime * 90;
-          }
-          
-          // Draw pipes
+        // Draw pipes
+        pipesRef.current.forEach(pipe => {
           const drawPipe = (x: number, height: number, isTop: boolean) => {
             // Add shadow for all devices
             ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
@@ -566,28 +598,6 @@
           // Draw both pipes
           drawPipe(pipe.x, pipe.topHeight, true);
           drawPipe(pipe.x, pipe.topHeight + PIPE.gap, false);
-          
-          // Only do collision and scoring if game is started
-          if (gameStarted && !gameOver) {
-            // Update scoring without particles
-            if (!pipe.passed && pipe.x + pipe.width < birdRef.current.x) {
-              pipe.passed = true;
-              setScore(prevScore => prevScore + 1);
-              soundManager.play('score');
-            }
-            
-            // Update collision with particles
-            if (
-              birdRef.current.x + birdRef.current.width > pipe.x &&
-              birdRef.current.x < pipe.x + pipe.width &&
-              (birdRef.current.y < pipe.topHeight || 
-              birdRef.current.y + birdRef.current.height > pipe.topHeight + PIPE.gap)
-            ) {
-              handleGameOver();
-            }
-          }
-          
-          return pipe.x > -pipe.width;
         });
         
         // Draw bird
@@ -625,47 +635,46 @@
           ctx.fillText(`${score}`, canvas.width / 2, 50);
         }
         
-        // Only check collisions if menu is not open
-        if (gameStarted && !gameOver && !isMenuOpen) {
-          if (birdRef.current.y + birdRef.current.height > canvas.height - groundHeight || birdRef.current.y < 0) {
-            handleGameOver();
-          }
+        // Draw particles
+        if (!isMobile) {
+          particlesRef.current.forEach(particle => {
+            ctx.fillStyle = particle.color;
+            ctx.globalAlpha = particle.life;
+            ctx.beginPath();
+            ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+          });
         }
         
-        // Update and draw cloud puffs (skip on mobile)
+        // Draw cloud puffs
         if (!isMobile) {
-          cloudPuffsRef.current = cloudPuffsRef.current.filter(puff => {
-            puff.size += puff.expandSpeed * deltaTime * 90;
-            puff.opacity -= puff.fadeSpeed * deltaTime * 90;
-            if (puff.opacity > 0) {
-              // Draw cloud shape using multiple circles
-              const drawCloudBubble = (offsetX: number, offsetY: number, sizeMultiplier: number) => {
-                ctx.beginPath();
-                ctx.fillStyle = `rgba(255, 255, 255, ${puff.opacity})`;
-                ctx.arc(
-                  puff.x + offsetX, 
-                  puff.y + offsetY, 
-                  puff.size * sizeMultiplier, 
-                  0, 
-                  Math.PI * 2
-                );
-                ctx.fill();
-              };
+          cloudPuffsRef.current.forEach(puff => {
+            // Draw cloud shape using multiple circles
+            const drawCloudBubble = (offsetX: number, offsetY: number, sizeMultiplier: number) => {
+              ctx.beginPath();
+              ctx.fillStyle = `rgba(255, 255, 255, ${puff.opacity})`;
+              ctx.arc(
+                puff.x + offsetX, 
+                puff.y + offsetY, 
+                puff.size * sizeMultiplier, 
+                0, 
+                Math.PI * 2
+              );
+              ctx.fill();
+            };
 
-              // Create cloud shape with multiple overlapping circles
-              drawCloudBubble(0, 0, 1);           // Center
-              drawCloudBubble(-puff.size/2, 0, 0.7);  // Left
-              drawCloudBubble(puff.size/2, 0, 0.7);   // Right
-              drawCloudBubble(0, -puff.size/3, 0.6);  // Top
-              drawCloudBubble(0, puff.size/3, 0.6);   // Bottom
-              // Add some smaller detail bubbles
-              drawCloudBubble(-puff.size/1.5, -puff.size/4, 0.4);
-              drawCloudBubble(puff.size/1.5, -puff.size/4, 0.4);
-              drawCloudBubble(-puff.size/3, puff.size/2, 0.3);
-              drawCloudBubble(puff.size/3, puff.size/2, 0.3);
-              return true;
-            }
-            return false;
+            // Create cloud shape with multiple overlapping circles
+            drawCloudBubble(0, 0, 1);           // Center
+            drawCloudBubble(-puff.size/2, 0, 0.7);  // Left
+            drawCloudBubble(puff.size/2, 0, 0.7);   // Right
+            drawCloudBubble(0, -puff.size/3, 0.6);  // Top
+            drawCloudBubble(0, puff.size/3, 0.6);   // Bottom
+            // Add some smaller detail bubbles
+            drawCloudBubble(-puff.size/1.5, -puff.size/4, 0.4);
+            drawCloudBubble(puff.size/1.5, -puff.size/4, 0.4);
+            drawCloudBubble(-puff.size/3, puff.size/2, 0.3);
+            drawCloudBubble(puff.size/3, puff.size/2, 0.3);
           });
         }
         
@@ -685,7 +694,7 @@
           cancelAnimationFrame(gameLoopRef.current);
         }
       };
-    }, [gameStarted, gameOver, score, bgImageLoaded, birdImageLoaded, handleGameOver, isMenuOpen]);
+    }, [gameStarted, gameOver, score, bgImageLoaded, birdImageLoaded, handleGameOver, isMenuOpen, updateGameLogic]);
     
     // Update game over effect to set dead state
     useEffect(() => {
