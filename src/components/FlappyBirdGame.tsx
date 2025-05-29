@@ -260,38 +260,36 @@
     // Add a ref to track the game start time for floaty start
     const startTimeRef = useRef<number | null>(null);
     
+    const spawnPipe = useCallback((ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
+      const groundHeight = 20;
+      const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
+      const minPipeHeight = PIPE.minPipeHeight;
+      const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
+      const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
+      const width = Math.floor(Math.random() * (PIPE.maxWidth - PIPE.minWidth)) + PIPE.minWidth;
+      const gradient = ctx && !isMobile ? createPipeGradient(ctx, width) : undefined;
+      pipesRef.current.push({
+        x: isMobile ? canvas.width : canvas.width - 150,
+        topHeight,
+        passed: false,
+        width,
+        gradient,
+        speed: basePipeSpeed + (difficultyRef.current - 1) * speedIncrement
+      });
+    }, [PIPE, pipeGapRef, difficultyRef, isMobile, createPipeGradient, basePipeSpeed, speedIncrement]);
+    
     const startGame = useCallback(() => {
-      soundManager.stopBackgroundMusic(); // Stop background music when game starts
+      soundManager.stopBackgroundMusic();
       soundManager.play('start');
       setGameStarted(true);
       setGameOver(false);
       setScore(0);
       birdRef.current = getInitialBird();
       pipesRef.current = [];
-      setIsMenuOpen(false); // Ensure menu is closed when game starts
-      frameCountRef.current = 0; // Reset frame count
-      startTimeRef.current = performance.now(); // Track when the game started
+      setIsMenuOpen(false);
+      frameCountRef.current = 0;
+      startTimeRef.current = performance.now();
       console.log('Game started!');
-      // Immediately spawn a pipe at game start
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const groundHeight = 20;
-        const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
-        const minPipeHeight = PIPE.minPipeHeight;
-        const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
-        const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
-        const width = Math.floor(Math.random() * (PIPE.maxWidth - PIPE.minWidth)) + PIPE.minWidth;
-        const ctx = canvas.getContext('2d');
-        const gradient = ctx && !isMobile ? createPipeGradient(ctx, width) : undefined;
-        pipesRef.current.push({
-          x: isMobile ? canvas.width : canvas.width - 150,
-          topHeight,
-          passed: false,
-          width,
-          gradient,
-          speed: basePipeSpeed + (difficultyRef.current - 1) * speedIncrement
-        });
-      }
     }, [isMobile]);
     
     // Separate function to handle game over
@@ -384,7 +382,6 @@
     
     // Add refs for delta time and pipe spawn timer
     const lastTimestampRef = useRef<number | null>(null);
-    const pipeSpawnTimerRef = useRef(0); // in seconds
 
     // Add refs for gameStarted, gameOver, isMenuOpen
     const gameStartedRef = useRef(gameStarted);
@@ -402,30 +399,6 @@
       let gravity = birdRef.current.gravity;
       birdRef.current.velocity += gravity * dt * 60;
       birdRef.current.y += birdRef.current.velocity * dt * 60;
-
-      // Pipe spawning based on time
-      const pipeIntervalSeconds = Math.max(
-        PIPE_INTERVAL_MIN,
-        PIPE_INTERVAL_BASE / difficultyRef.current
-      );
-      pipeSpawnTimerRef.current += dt;
-      if (pipeSpawnTimerRef.current >= pipeIntervalSeconds) {
-        const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
-        const minPipeHeight = PIPE.minPipeHeight;
-        const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
-        const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
-        const width = Math.floor(Math.random() * (PIPE.maxWidth - PIPE.minWidth)) + PIPE.minWidth;
-        const gradient = isMobile ? undefined : createPipeGradient(ctx, width);
-        pipesRef.current.push({
-          x: isMobile ? canvas.width : canvas.width - 150,
-          topHeight,
-          passed: false,
-          width,
-          gradient,
-          speed: basePipeSpeed + (difficultyRef.current - 1) * speedIncrement
-        });
-        pipeSpawnTimerRef.current = 0;
-      }
 
       // Update particles (skip on mobile)
       if (!isMobile) {
@@ -501,9 +474,8 @@
       };
       updateCanvasSize();
       window.addEventListener('resize', updateCanvasSize);
-      // Reset lastTimestamp and pipeSpawnTimer on game start
+      // Reset lastTimestamp on game start
       lastTimestampRef.current = null;
-      pipeSpawnTimerRef.current = 0;
       const gameLoop = (timestamp?: number) => {
         if (!timestamp) timestamp = performance.now();
         let deltaTime = 0;
@@ -783,6 +755,21 @@
     
     // DEV: Bypass OrangeID login for now
     const { isLoggedIn, signOut } = useBedrockPassport();
+    
+    // Add this useEffect for fixed-interval spawning:
+    useEffect(() => {
+      if (!gameStarted || gameOver) return;
+      const canvas = canvasRef.current;
+      const ctx = canvas && canvas.getContext('2d');
+      if (!canvas || !ctx) return;
+      // Spawn one immediately
+      spawnPipe(ctx, canvas);
+      // Then every PIPE_INTERVAL_BASE seconds (scaled by difficulty)
+      const interval = setInterval(() => {
+        spawnPipe(ctx, canvas);
+      }, 1000 * PIPE_INTERVAL_BASE / difficultyRef.current);
+      return () => clearInterval(interval);
+    }, [gameStarted, gameOver, difficulty, spawnPipe]);
     
     return (
       <>
