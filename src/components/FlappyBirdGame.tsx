@@ -395,7 +395,8 @@
     useEffect(() => { gameOverRef.current = gameOver; }, [gameOver]);
     useEffect(() => { isMenuOpenRef.current = isMenuOpen; }, [isMenuOpen]);
 
-    const PIPE_SPAWN_DISTANCE = 300; // px, distance between pipes
+    // Set pipe spawn distance: more distant on desktop
+    const PIPE_SPAWN_DISTANCE = isMobile ? 300 : 380; // px, distance between pipes
 
     // Move all game logic into this function
     const updateGameLogic = useCallback((dt: number, ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, groundHeight: number) => {
