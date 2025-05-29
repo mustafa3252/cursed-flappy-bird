@@ -397,7 +397,7 @@
           passed: false,
           width,
           gradient,
-          speed: (isMobile ? 4.2 : 3) + (difficultyRef.current - 1) * (isMobile ? 0.7 : 1)
+          speed: isMobile ? 250 : 180 // px/sec, adjust as needed
         });
         pipeSpawnTimerRef.current = 0;
       }
@@ -415,7 +415,7 @@
       // Update pipes
       pipesRef.current = pipesRef.current.filter(pipe => {
         if (gameStartedRef.current && !gameOverRef.current) {
-          pipe.x -= (pipe.speed || (3 + (difficultyRef.current - 1))) * dt * 60;
+          pipe.x -= (pipe.speed || (3 + (difficultyRef.current - 1))) * dt;
         }
         // Scoring
         if (!pipe.passed && pipe.x + pipe.width < birdRef.current.x) {
