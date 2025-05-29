@@ -256,6 +256,13 @@
     // Add a ref to track the game start time for floaty start
     const startTimeRef = useRef<number | null>(null);
     
+    const getPipeGap = () => {
+      if (score >= 15) {
+        return Math.max(PIPE.gap * 0.75, pipeGapRef.current) * 0.8; // 20% smaller after 15 points
+      }
+      return Math.max(PIPE.gap * 0.75, pipeGapRef.current);
+    };
+    
     const startGame = useCallback(() => {
       soundManager.stopBackgroundMusic(); // Stop background music when game starts
       soundManager.play('start');
@@ -272,7 +279,7 @@
       const canvas = canvasRef.current;
       if (canvas) {
         const groundHeight = 20;
-        const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current);
+        const pipeGap = getPipeGap();
         const minPipeHeight = PIPE.minPipeHeight;
         const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
         const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
@@ -414,7 +421,7 @@
         }
       }
       if (shouldSpawn) {
-        const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current);
+        const pipeGap = getPipeGap();
         const minPipeHeight = PIPE.minPipeHeight;
         const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
         const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
