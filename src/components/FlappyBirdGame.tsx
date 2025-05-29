@@ -234,6 +234,12 @@
       minPipeHeight: 60
     };
     
+    // At the top of the component, after isMobile:
+    const PIPE_INTERVAL_BASE = isMobile ? 0.7 : 0.9;
+    const PIPE_INTERVAL_MIN  = isMobile ? 0.5 : 0.6;
+    const basePipeSpeed      = 3.0;
+    const speedIncrement     = isMobile ? 0.5 : 1.0;
+    
     // Centralized function for initial bird state
     function getInitialBird() {
       return {
@@ -283,7 +289,7 @@
           passed: false,
           width,
           gradient,
-          speed: (isMobile ? 4.2 : 3) + (difficultyRef.current - 1) * (isMobile ? 0.7 : 1)
+          speed: basePipeSpeed + (difficultyRef.current - 1) * speedIncrement
         });
       }
     }, [isMobile]);
@@ -398,11 +404,10 @@
       birdRef.current.y += birdRef.current.velocity * dt * 60;
 
       // Pipe spawning based on time
-      const pipeIntervalSeconds = (() => {
-        const minPipeInterval = 0.90;
-        const baseInterval = 0.90;
-        return Math.max(minPipeInterval, baseInterval / difficultyRef.current);
-      })();
+      const pipeIntervalSeconds = Math.max(
+        PIPE_INTERVAL_MIN,
+        PIPE_INTERVAL_BASE / difficultyRef.current
+      );
       pipeSpawnTimerRef.current += dt;
       if (pipeSpawnTimerRef.current >= pipeIntervalSeconds) {
         const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
@@ -417,7 +422,7 @@
           passed: false,
           width,
           gradient,
-          speed: (isMobile ? 4.2 : 3) + (difficultyRef.current - 1) * (isMobile ? 0.7 : 1)
+          speed: basePipeSpeed + (difficultyRef.current - 1) * speedIncrement
         });
         pipeSpawnTimerRef.current = 0;
       }
