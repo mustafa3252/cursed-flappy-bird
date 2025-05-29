@@ -399,8 +399,8 @@
 
       // Pipe spawning based on time
       const pipeIntervalSeconds = (() => {
-        const minPipeInterval = 0.5;
-        const baseInterval = 0.7;
+        const minPipeInterval = 0.8;
+        const baseInterval = 0.8;
         return Math.max(minPipeInterval, baseInterval / difficultyRef.current);
       })();
       pipeSpawnTimerRef.current += dt;
