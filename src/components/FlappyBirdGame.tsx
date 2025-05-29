@@ -377,11 +377,14 @@
       birdRef.current.velocity += gravity * dt * 60;
       birdRef.current.y += birdRef.current.velocity * dt * 60;
 
-      // Pipe spawning based on frames
-      const scaledDt = dt * 60;
-      pipeSpawnTimerRef.current += scaledDt;
-      const frameThreshold = isMobile ? 40 : 80; // ~0.67s or ~1.33s
-      if (pipeSpawnTimerRef.current >= frameThreshold) {
+      // Pipe spawning based on time
+      const pipeIntervalSeconds = (() => {
+        const minPipeInterval = isMobile ? 0.67 : 0.67;
+        const baseInterval = isMobile ? 1.17 : 2.33;
+        return Math.max(minPipeInterval, baseInterval / difficultyRef.current);
+      })();
+      pipeSpawnTimerRef.current += dt * 60;
+      if (pipeSpawnTimerRef.current >= pipeIntervalSeconds) {
         const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
         const minPipeHeight = PIPE.minPipeHeight;
         const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
@@ -389,14 +392,13 @@
         const width = Math.floor(Math.random() * (PIPE.maxWidth - PIPE.minWidth)) + PIPE.minWidth;
         const gradient = isMobile ? undefined : createPipeGradient(ctx, width);
         pipesRef.current.push({
-          x: canvas.width, // start just outside the right edge
+          x: isMobile ? canvas.width : canvas.width - 150,
           topHeight,
           passed: false,
           width,
           gradient,
           speed: (isMobile ? 4.2 : 3) + (difficultyRef.current - 1) * (isMobile ? 0.7 : 1)
         });
-        console.log('➕ spawned pipe, total=', pipesRef.current.length);
         pipeSpawnTimerRef.current = 0;
       }
 
@@ -531,7 +533,6 @@
         
         // Draw pipes
         pipesRef.current.forEach(pipe => {
-          console.log('Drawing pipe at x=', pipe.x.toFixed(0));
           const drawPipe = (x: number, height: number, isTop: boolean) => {
             // Add shadow for all devices
             ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
