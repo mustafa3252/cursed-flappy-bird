@@ -361,9 +361,19 @@
     const pipeSpawnTimerRef = useRef(0); // in seconds
     
     // Add fixed timestep constants and accumulator
-    const FIXED_TIME_STEP = 1 / 60; // 60Hz
+    const FIXED_TIME_STEP = 1 / 30; // 60Hz
     const MAX_UPDATES_PER_FRAME = 5;
     const accumulatorRef = useRef(0);
+
+    // Add refs for gameStarted, gameOver, isMenuOpen
+    const gameStartedRef = useRef(gameStarted);
+    const gameOverRef = useRef(gameOver);
+    const isMenuOpenRef = useRef(isMenuOpen);
+
+    // Sync refs with state
+    useEffect(() => { gameStartedRef.current = gameStarted; }, [gameStarted]);
+    useEffect(() => { gameOverRef.current = gameOver; }, [gameOver]);
+    useEffect(() => { isMenuOpenRef.current = isMenuOpen; }, [isMenuOpen]);
 
     // Move all game logic into this function
     const updateGameLogic = useCallback((dt: number, ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, groundHeight: number) => {
@@ -409,7 +419,7 @@
 
       // Update pipes
       pipesRef.current = pipesRef.current.filter(pipe => {
-        if (gameStarted && !gameOver) {
+        if (gameStartedRef.current && !gameOverRef.current) {
           pipe.x -= (pipe.speed || (3 + (difficultyRef.current - 1))) * dt * 60;
         }
         // Scoring
@@ -443,7 +453,7 @@
       if (birdRef.current.y + birdRef.current.height > canvas.height - groundHeight || birdRef.current.y < 0) {
         handleGameOver();
       }
-    }, [PIPE, addCloudPuff, createPipeGradient, gameStarted, gameOver, handleGameOver, isMobile]);
+    }, [PIPE, addCloudPuff, createPipeGradient, handleGameOver, isMobile]);
 
     useEffect(() => {
       if (!bgImageLoaded || !birdImageLoaded) {
@@ -487,7 +497,7 @@
         accumulatorRef.current += deltaTime;
         let numUpdates = 0;
         while (accumulatorRef.current >= FIXED_TIME_STEP && numUpdates < MAX_UPDATES_PER_FRAME) {
-          if (gameStarted && !gameOver && !isMenuOpen) {
+          if (gameStartedRef.current && !gameOverRef.current && !isMenuOpenRef.current) {
             updateGameLogic(FIXED_TIME_STEP, ctx, canvas, groundHeight);
           }
           accumulatorRef.current -= FIXED_TIME_STEP;
@@ -627,7 +637,7 @@
         }
         
         // Update score display
-        if (gameStarted) {
+        if (gameStartedRef.current) {
           // Draw current score
           ctx.fillStyle = 'white';
           ctx.font = isMobile ? '20px "Courier New", monospace' : '30px "Courier New", monospace';
@@ -679,11 +689,11 @@
         }
         
         // Game over
-        if (gameOver) {
+        if (gameOverRef.current) {
           return;
         }
         
-        if (!gameOver) {
+        if (!gameOverRef.current) {
           gameLoopRef.current = requestAnimationFrame(gameLoop);
         }
       };
