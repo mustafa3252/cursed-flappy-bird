@@ -359,11 +359,6 @@
     // Add refs for delta time and pipe spawn timer
     const lastTimestampRef = useRef<number | null>(null);
     const pipeSpawnTimerRef = useRef(0); // in seconds
-    
-    // Add fixed timestep constants and accumulator
-    const FIXED_TIME_STEP = 1 / 30; // 60Hz
-    const MAX_UPDATES_PER_FRAME = 5;
-    const accumulatorRef = useRef(0);
 
     // Add refs for gameStarted, gameOver, isMenuOpen
     const gameStartedRef = useRef(gameStarted);
@@ -484,24 +479,20 @@
       // Reset lastTimestamp and pipeSpawnTimer on game start
       lastTimestampRef.current = null;
       pipeSpawnTimerRef.current = 0;
-      accumulatorRef.current = 0;
       const gameLoop = (timestamp?: number) => {
         if (!timestamp) timestamp = performance.now();
         let deltaTime = 0;
         if (lastTimestampRef.current !== null) {
           deltaTime = (timestamp - lastTimestampRef.current) / 1000;
         } else {
-          deltaTime = FIXED_TIME_STEP;
+          deltaTime = 1 / 60;
         }
+        // Clamp deltaTime to avoid spiral of death
+        deltaTime = Math.min(deltaTime, 1 / 30);
         lastTimestampRef.current = timestamp;
-        accumulatorRef.current += deltaTime;
-        let numUpdates = 0;
-        while (accumulatorRef.current >= FIXED_TIME_STEP && numUpdates < MAX_UPDATES_PER_FRAME) {
-          if (gameStartedRef.current && !gameOverRef.current && !isMenuOpenRef.current) {
-            updateGameLogic(FIXED_TIME_STEP, ctx, canvas, groundHeight);
-          }
-          accumulatorRef.current -= FIXED_TIME_STEP;
-          numUpdates++;
+        // No accumulator, just update once per frame
+        if (gameStartedRef.current && !gameOverRef.current && !isMenuOpenRef.current) {
+          updateGameLogic(deltaTime, ctx, canvas, groundHeight);
         }
         // Render (draw everything based on current state)
         ctx.clearRect(0, 0, canvas.width, canvas.height);
