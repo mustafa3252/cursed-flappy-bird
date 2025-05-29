@@ -230,7 +230,7 @@
     const PIPE = {
       minWidth: isMobile ? 60 : 80,
       maxWidth: isMobile ? 80 : 110,
-      gap: isMobile ? 120 : 200,
+      gap: isMobile ? 180 : 260,
       minPipeHeight: 60
     };
     
@@ -399,8 +399,8 @@
 
       // Pipe spawning based on time
       const pipeIntervalSeconds = (() => {
-        const minPipeInterval = isMobile ? 0.4 : 0.4;
-        const baseInterval = isMobile ? 0.8 : 1.2;
+        const minPipeInterval = 0.25;
+        const baseInterval = 0.5;
         return Math.max(minPipeInterval, baseInterval / difficultyRef.current);
       })();
       pipeSpawnTimerRef.current += dt;
