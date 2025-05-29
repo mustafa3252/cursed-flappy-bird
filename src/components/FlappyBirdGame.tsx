@@ -260,36 +260,38 @@
     // Add a ref to track the game start time for floaty start
     const startTimeRef = useRef<number | null>(null);
     
-    const spawnPipe = useCallback((ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-      const groundHeight = 20;
-      const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
-      const minPipeHeight = PIPE.minPipeHeight;
-      const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
-      const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
-      const width = Math.floor(Math.random() * (PIPE.maxWidth - PIPE.minWidth)) + PIPE.minWidth;
-      const gradient = ctx && !isMobile ? createPipeGradient(ctx, width) : undefined;
-      pipesRef.current.push({
-        x: isMobile ? canvas.width : canvas.width - 150,
-        topHeight,
-        passed: false,
-        width,
-        gradient,
-        speed: basePipeSpeed + (difficultyRef.current - 1) * speedIncrement
-      });
-    }, [PIPE, pipeGapRef, difficultyRef, isMobile, createPipeGradient, basePipeSpeed, speedIncrement]);
-    
     const startGame = useCallback(() => {
-      soundManager.stopBackgroundMusic();
+      soundManager.stopBackgroundMusic(); // Stop background music when game starts
       soundManager.play('start');
       setGameStarted(true);
       setGameOver(false);
       setScore(0);
       birdRef.current = getInitialBird();
       pipesRef.current = [];
-      setIsMenuOpen(false);
-      frameCountRef.current = 0;
-      startTimeRef.current = performance.now();
+      setIsMenuOpen(false); // Ensure menu is closed when game starts
+      frameCountRef.current = 0; // Reset frame count
+      startTimeRef.current = performance.now(); // Track when the game started
       console.log('Game started!');
+      // Immediately spawn a pipe at game start
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const groundHeight = 20;
+        const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
+        const minPipeHeight = PIPE.minPipeHeight;
+        const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
+        const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
+        const width = Math.floor(Math.random() * (PIPE.maxWidth - PIPE.minWidth)) + PIPE.minWidth;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx && !isMobile ? createPipeGradient(ctx, width) : undefined;
+        pipesRef.current.push({
+          x: isMobile ? canvas.width : canvas.width - 150,
+          topHeight,
+          passed: false,
+          width,
+          gradient,
+          speed: basePipeSpeed + (difficultyRef.current - 1) * speedIncrement
+        });
+      }
     }, [isMobile]);
     
     // Separate function to handle game over
@@ -382,7 +384,7 @@
     
     // Add refs for delta time and pipe spawn timer
     const lastTimestampRef = useRef<number | null>(null);
-
+    
     // Add refs for gameStarted, gameOver, isMenuOpen
     const gameStartedRef = useRef(gameStarted);
     const gameOverRef = useRef(gameOver);
@@ -393,12 +395,43 @@
     useEffect(() => { gameOverRef.current = gameOver; }, [gameOver]);
     useEffect(() => { isMenuOpenRef.current = isMenuOpen; }, [isMenuOpen]);
 
+    const PIPE_SPAWN_DISTANCE = 300; // px, distance between pipes
+
     // Move all game logic into this function
     const updateGameLogic = useCallback((dt: number, ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, groundHeight: number) => {
       // Bird movement
       let gravity = birdRef.current.gravity;
       birdRef.current.velocity += gravity * dt * 60;
       birdRef.current.y += birdRef.current.velocity * dt * 60;
+
+      // Pipe spawning based on distance (pixel-based)
+      const spawnX = isMobile ? canvas.width : canvas.width - 150;
+      const pipes = pipesRef.current;
+      let shouldSpawn = false;
+      if (pipes.length === 0) {
+        shouldSpawn = true;
+      } else {
+        const lastPipe = pipes[pipes.length - 1];
+        if (spawnX - (lastPipe.x) >= PIPE_SPAWN_DISTANCE) {
+          shouldSpawn = true;
+        }
+      }
+      if (shouldSpawn) {
+        const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
+        const minPipeHeight = PIPE.minPipeHeight;
+        const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
+        const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
+        const width = Math.floor(Math.random() * (PIPE.maxWidth - PIPE.minWidth)) + PIPE.minWidth;
+        const gradient = isMobile ? undefined : createPipeGradient(ctx, width);
+        pipes.push({
+          x: spawnX,
+          topHeight,
+          passed: false,
+          width,
+          gradient,
+          speed: basePipeSpeed + (difficultyRef.current - 1) * speedIncrement
+        });
+      }
 
       // Update particles (skip on mobile)
       if (!isMobile) {
@@ -474,7 +507,7 @@
       };
       updateCanvasSize();
       window.addEventListener('resize', updateCanvasSize);
-      // Reset lastTimestamp on game start
+      // Reset lastTimestamp and pipeSpawnTimer on game start
       lastTimestampRef.current = null;
       const gameLoop = (timestamp?: number) => {
         if (!timestamp) timestamp = performance.now();
@@ -755,25 +788,6 @@
     
     // DEV: Bypass OrangeID login for now
     const { isLoggedIn, signOut } = useBedrockPassport();
-    
-    // Add this useEffect for fixed-interval spawning:
-    useEffect(() => {
-      if (!gameStarted || gameOver) return;
-      const canvas = canvasRef.current;
-      const ctx = canvas && canvas.getContext('2d');
-      if (!canvas || !ctx) return;
-      // Spawn one immediately
-      spawnPipe(ctx, canvas);
-      // Clamp interval to minimum
-      const intervalMs = Math.max(
-        PIPE_INTERVAL_MIN * 1000,
-        (PIPE_INTERVAL_BASE * 1000) / difficultyRef.current
-      );
-      const interval = setInterval(() => {
-        spawnPipe(ctx, canvas);
-      }, intervalMs);
-      return () => clearInterval(interval);
-    }, [gameStarted, gameOver, difficulty, spawnPipe]);
     
     return (
       <>
