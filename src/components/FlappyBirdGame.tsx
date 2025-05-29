@@ -410,9 +410,9 @@
       // Update particles (skip on mobile)
       if (!isMobile) {
         particlesRef.current = particlesRef.current.filter(particle => {
-          particle.x += particle.vx * dt;
-          particle.y += particle.vy * dt;
-          particle.life -= 0.02 * dt;
+          particle.x += particle.vx * dt * 60;
+          particle.y += particle.vy * dt * 60;
+          particle.life -= 0.02 * dt * 60;
           return particle.life > 0;
         });
       }
@@ -420,7 +420,7 @@
       // Update pipes
       pipesRef.current = pipesRef.current.filter(pipe => {
         if (gameStartedRef.current && !gameOverRef.current) {
-          pipe.x -= (pipe.speed || (3 + (difficultyRef.current - 1))) * dt;
+          pipe.x -= (pipe.speed || (3 + (difficultyRef.current - 1))) * dt * 60;
         }
         // Scoring
         if (!pipe.passed && pipe.x + pipe.width < birdRef.current.x) {
@@ -443,8 +443,8 @@
       // Update cloud puffs (skip on mobile)
       if (!isMobile) {
         cloudPuffsRef.current = cloudPuffsRef.current.filter(puff => {
-          puff.size += puff.expandSpeed * dt;
-          puff.opacity -= puff.fadeSpeed * dt;
+          puff.size += puff.expandSpeed * dt * 60;
+          puff.opacity -= puff.fadeSpeed * dt * 60;
           return puff.opacity > 0;
         });
       }
