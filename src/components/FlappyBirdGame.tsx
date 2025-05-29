@@ -443,7 +443,7 @@
       // Update pipes
       pipesRef.current = pipesRef.current.filter(pipe => {
         if (gameStartedRef.current && !gameOverRef.current) {
-          pipe.x -= (pipe.speed || (3 + (difficultyRef.current - 1))) * dt * 60;
+          pipe.x -= (pipe.speed || basePipeSpeed) * dt * 60;
         }
         // Scoring
         if (!pipe.passed && pipe.x + pipe.width < birdRef.current.x) {
