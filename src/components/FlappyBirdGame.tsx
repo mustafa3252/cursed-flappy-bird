@@ -764,10 +764,14 @@
       if (!canvas || !ctx) return;
       // Spawn one immediately
       spawnPipe(ctx, canvas);
-      // Then every PIPE_INTERVAL_BASE seconds (scaled by difficulty)
+      // Clamp interval to minimum
+      const intervalMs = Math.max(
+        PIPE_INTERVAL_MIN * 1000,
+        (PIPE_INTERVAL_BASE * 1000) / difficultyRef.current
+      );
       const interval = setInterval(() => {
         spawnPipe(ctx, canvas);
-      }, 1000 * PIPE_INTERVAL_BASE / difficultyRef.current);
+      }, intervalMs);
       return () => clearInterval(interval);
     }, [gameStarted, gameOver, difficulty, spawnPipe]);
     
