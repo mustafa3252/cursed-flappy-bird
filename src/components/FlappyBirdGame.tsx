@@ -383,7 +383,7 @@
         const baseInterval = isMobile ? 1.17 : 2.33;
         return Math.max(minPipeInterval, baseInterval / difficultyRef.current);
       })();
-      pipeSpawnTimerRef.current += dt * 10;
+      pipeSpawnTimerRef.current += dt * 2;
       if (pipeSpawnTimerRef.current >= pipeIntervalSeconds) {
         const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
         const minPipeHeight = PIPE.minPipeHeight;
