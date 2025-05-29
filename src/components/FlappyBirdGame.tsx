@@ -398,6 +398,9 @@
         } else {
           deltaTime = 1 / 60; // default to 60 FPS for first frame
         }
+        // Clamp deltaTime to avoid lag spikes
+        const MAX_DELTA = 1 / 20; // 0.05s = 20 FPS minimum
+        if (deltaTime > MAX_DELTA) deltaTime = MAX_DELTA;
         lastTimestampRef.current = timestamp;
         // Clear canvas and set background
         ctx.clearRect(0, 0, canvas.width, canvas.height);
