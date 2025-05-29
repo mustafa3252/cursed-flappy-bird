@@ -141,10 +141,6 @@
       speed?: number
     }>>([]);
     
-    // Add difficulty state
-    const [difficulty, setDifficulty] = useState(1);
-    const difficultyRef = useRef(1);
-    
     // Add particle system
     const particlesRef = useRef<Array<{
       x: number,
@@ -276,7 +272,7 @@
       const canvas = canvasRef.current;
       if (canvas) {
         const groundHeight = 20;
-        const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
+        const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current);
         const minPipeHeight = PIPE.minPipeHeight;
         const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
         const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
@@ -289,7 +285,7 @@
           passed: false,
           width,
           gradient,
-          speed: basePipeSpeed + (difficultyRef.current - 1) * speedIncrement
+          speed: basePipeSpeed
         });
       }
     }, [isMobile]);
@@ -418,7 +414,7 @@
         }
       }
       if (shouldSpawn) {
-        const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current - (difficultyRef.current - 1) * 10);
+        const pipeGap = Math.max(PIPE.gap * 0.75, pipeGapRef.current);
         const minPipeHeight = PIPE.minPipeHeight;
         const maxPipeHeight = canvas.height - groundHeight - pipeGap - minPipeHeight;
         const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight)) + minPipeHeight;
@@ -430,7 +426,7 @@
           passed: false,
           width,
           gradient,
-          speed: basePipeSpeed + (difficultyRef.current - 1) * speedIncrement
+          speed: basePipeSpeed
         });
       }
 
@@ -746,15 +742,6 @@
         }
       };
     }, []);
-    
-    // Update difficulty based on score
-    useEffect(() => {
-      if (gameStarted && !gameOver) {
-        const newDifficulty = Math.min(3, 1 + Math.floor(score / 10));
-        difficultyRef.current = newDifficulty;
-        setDifficulty(newDifficulty);
-      }
-    }, [score, gameStarted, gameOver]);
     
     // Load high score on mount
     useEffect(() => {
