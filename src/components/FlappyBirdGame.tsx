@@ -374,8 +374,8 @@
     const updateGameLogic = useCallback((dt: number, ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, groundHeight: number) => {
       // Bird movement
       let gravity = birdRef.current.gravity;
-      birdRef.current.velocity += gravity * dt;
-      birdRef.current.y += birdRef.current.velocity * dt;
+      birdRef.current.velocity += gravity * dt * 60;
+      birdRef.current.y += birdRef.current.velocity * dt * 60;
 
       // Pipe spawning based on time
       const pipeIntervalSeconds = (() => {
