@@ -440,8 +440,8 @@
         if (gameStarted && !gameOver && !isMenuOpen) {
           // Remove floaty start: always use normal gravity
           let gravity = birdRef.current.gravity;
-          birdRef.current.velocity += gravity * deltaTime * 60;
-          birdRef.current.y += birdRef.current.velocity * deltaTime * 60;
+          birdRef.current.velocity += gravity * deltaTime * 90;
+          birdRef.current.y += birdRef.current.velocity * deltaTime * 90;
           
           // Pipe spawning based on time, not frame count
           // Calculate pipe interval in seconds
@@ -474,9 +474,9 @@
         // Update and draw particles (skip on mobile)
         if (!isMobile) {
           particlesRef.current = particlesRef.current.filter(particle => {
-            particle.x += particle.vx * deltaTime * 60;
-            particle.y += particle.vy * deltaTime * 60;
-            particle.life -= 0.02 * deltaTime * 60;
+            particle.x += particle.vx * deltaTime * 90;
+            particle.y += particle.vy * deltaTime * 90;
+            particle.life -= 0.02 * deltaTime * 90;
             if (particle.life > 0) {
               ctx.fillStyle = particle.color;
               ctx.globalAlpha = particle.life;
@@ -493,7 +493,7 @@
         // Update pipe movement with difficulty
         pipesRef.current = pipesRef.current.filter(pipe => {
           if (gameStarted && !gameOver) {
-            pipe.x -= (pipe.speed || (3 + (difficultyRef.current - 1))) * deltaTime * 60;
+            pipe.x -= (pipe.speed || (3 + (difficultyRef.current - 1))) * deltaTime * 90;
           }
           
           // Draw pipes
@@ -632,8 +632,8 @@
         // Update and draw cloud puffs (skip on mobile)
         if (!isMobile) {
           cloudPuffsRef.current = cloudPuffsRef.current.filter(puff => {
-            puff.size += puff.expandSpeed * deltaTime * 60;
-            puff.opacity -= puff.fadeSpeed * deltaTime * 60;
+            puff.size += puff.expandSpeed * deltaTime * 90;
+            puff.opacity -= puff.fadeSpeed * deltaTime * 90;
             if (puff.opacity > 0) {
               // Draw cloud shape using multiple circles
               const drawCloudBubble = (offsetX: number, offsetY: number, sizeMultiplier: number) => {
