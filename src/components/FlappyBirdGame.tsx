@@ -258,9 +258,9 @@
     
     const getPipeGap = () => {
       if (score >= 15) {
-        return Math.max(PIPE.gap * 0.75, pipeGapRef.current); // 20% smaller after 15 points
+        return Math.max(PIPE.gap * 0.90, pipeGapRef.current); // 20% smaller after 15 points
       }
-      return Math.max(PIPE.gap * 0.90, pipeGapRef.current);
+      return Math.max(PIPE.gap * 0.70, pipeGapRef.current);
     };
     
     const startGame = useCallback(() => {
