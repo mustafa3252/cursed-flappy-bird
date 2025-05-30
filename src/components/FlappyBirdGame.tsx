@@ -12,6 +12,8 @@
   import pipeTopImg from '@/assets/pipeTop.png';
   import pipeBottomImg from '@/assets/pipeBottom.png';
   import { useBedrockPassport, LoginPanel } from "@bedrock_org/passport";
+  import { supabase } from '@/utils/supabase';
+  import Leaderboard from './Leaderboard';
 
   // Debug log imports
   console.log('Bird image imports:', {
@@ -297,8 +299,11 @@
       }
     }, [isMobile]);
     
+    // DEV: Bypass OrangeID login for now
+    const { isLoggedIn, signOut } = useBedrockPassport();
+    
     // Separate function to handle game over
-    const handleGameOver = useCallback(() => {
+    const handleGameOver = useCallback(async () => {
       if (!gameOver) {
         soundManager.play('hit');
         setTimeout(() => soundManager.play('die'), 500);
@@ -310,8 +315,28 @@
           localStorage.setItem('flappyBirdHighScore', score.toString());
           setHighScore(score);
         }
+
+        // Submit to leaderboard
+        let username = 'Anonymous';
+        if (isLoggedIn && typeof window !== 'undefined') {
+          // If you have a user object, use their name/handle here
+          // username = user?.username || user?.email || 'Anonymous';
+          username = prompt('Enter your name for the leaderboard')?.slice(0, 20) || 'Anonymous';
+        }
+        try {
+          const { data, error } = await supabase
+            .from('leaderboards')
+            .insert([{ username, score }]);
+          if (error) {
+            console.error('Failed to submit leaderboard:', error);
+          } else {
+            console.log('Score submitted:', data);
+          }
+        } catch (err) {
+          console.error('Leaderboard submit error:', err);
+        }
       }
-    }, [gameOver, score]);
+    }, [gameOver, score, isLoggedIn, setHighScore]);
     
     // Update jump function to add cloud puff
     const jump = useCallback(() => {
@@ -781,9 +806,6 @@
     
     console.log('Pipes array:', pipesRef.current);
     
-    // DEV: Bypass OrangeID login for now
-    const { isLoggedIn, signOut } = useBedrockPassport();
-    
     return (
       <>
         {/* OrangeID login overlay OUTSIDE the game container */}
@@ -847,6 +869,7 @@
                 <h2 className="text-3xl font-bold text-orange-400 pixel-font mb-2">Game Over</h2>
                 <div className="text-white text-xl pixel-font mb-2">Score: <span className="text-orange-300">{score}</span></div>
                 <div className="text-white text-lg pixel-font mb-4">High Score: <span className="text-orange-200">{highScore}</span></div>
+                <Leaderboard />
                 <div className="text-white text-base pixel-font animate-flash mt-2 text-center">
                   Touch or press <span className="text-orange-400">space bar</span> to start
                 </div>
