@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import LoginButton from "@/components/LoginButton";
-import backgroundImg from '@/assets/background.png';
+import backgroundImg from '@/assets/background3.png';
 import soundManager from '@/utils/gameSounds';
 
 const Index = () => {

@@ -5,7 +5,7 @@
   import { Volume2, VolumeX, Menu } from 'lucide-react';
   import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
   import GameCustomizationPanel from '@/components/GameCustomizationPanel';
-  import backgroundImg from '@/assets/background2.png';
+  import backgroundImg from '@/assets/background3.png';
   import birdImg from '@/assets/bird.png';
   import birdUpImg from '@/assets/birdUp.png';
   import birdDeadImg from '@/assets/birdDead.png';
