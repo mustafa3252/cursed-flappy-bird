@@ -5,7 +5,7 @@
   import { Volume2, VolumeX, Menu } from 'lucide-react';
   import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
   import GameCustomizationPanel from '@/components/GameCustomizationPanel';
-  import backgroundImg from '@/assets/background.png';
+  import backgroundImg from '@/assets/background2.png';
   import birdImg from '@/assets/bird.png';
   import birdUpImg from '@/assets/birdUp.png';
   import birdDeadImg from '@/assets/birdDead.png';
@@ -865,7 +865,7 @@
           
           {/* Customization Button: replaces hamburger/menu icon */}
           <button 
-            className={`fixed top-2 right-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center font-bold ${isMobile ? 'w-auto h-10 px-4 py-2 text-base' : 'w-auto h-12 px-6 py-3 text-lg'}`}
+            className={`fixed top-2 right-2 z-[1000] bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors shadow-lg border-2 border-orange-500 flex items-center justify-center font-bold ${isMobile ? 'w-auto h-10 px-4 py-2 text-base' : 'w-auto h-12 px-6 py-3 text-lg'} glow-ai-btn`}
             style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
             aria-label="Open customization menu"
             onClick={(e) => {
@@ -935,6 +935,14 @@
           .animate-flash {
             animation: flash 1.5s infinite;
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+          }
+
+          .glow-ai-btn {
+            box-shadow: 0 0 12px 2px #ff9900, 0 0 32px 8px #ff9900aa;
+            transition: box-shadow 0.2s;
+          }
+          .glow-ai-btn:hover, .glow-ai-btn:focus {
+            box-shadow: 0 0 24px 6px #ff9900, 0 0 48px 16px #ff9900cc;
           }
           `}
         </style>
