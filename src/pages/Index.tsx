@@ -52,7 +52,7 @@ const Index = () => {
         <div className="text-center max-w-2xl mx-auto bg-black/70 p-8 rounded-lg border-2 border-orange-500">
           <h2 className="text-4xl font-bold mb-6 text-orange-500 font-mono">CURSED FLAPPY BIRD</h2>
           <p className="text-xl text-gray-300 mb-8 font-mono">
-            Let AI make this game wild 🐎, use it to edit bird, background and pipes 🥴
+            Let AI make this game wild 🐎, use it to edit the bird and the background! 🥴
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <button 
