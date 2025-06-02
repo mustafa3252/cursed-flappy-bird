@@ -71,7 +71,6 @@
     // Update loadImages function to use current bird state
     const loadImages = useCallback(() => {
       console.log('Starting to load images...');
-      setBgImageLoaded(false);
       setBirdImageLoaded(false);
       
       // Load background texture
@@ -409,7 +408,7 @@
       birdRef.current.y += birdRef.current.velocity * dt * 60;
 
       // Pipe spawning based on distance (pixel-based)
-      const spawnX = isMobile ? canvas.width : canvas.width - 150;
+      const spawnX = isMobile ? canvas.width : canvas.width - 250;
       const pipes = pipesRef.current;
       let shouldSpawn = false;
       if (pipes.length === 0) {
